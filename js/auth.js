@@ -2,6 +2,7 @@
 document.addEventListener("DOMContentLoaded", function () {
   setupLoginForm();
   setupRegisterForm();
+  setupRecoveryForm();
 });
 
 function setupLoginForm() {
@@ -29,6 +30,20 @@ function setupLoginForm() {
     setTimeout(function () {
       window.location.href = result.user.role === "admin" ? "./admin/produtos.html" : "./produtos.html";
     }, 900);
+  });
+}
+
+function setupRecoveryForm() {
+  var form = document.querySelector("#password-recovery-form");
+  if (!form) {
+    return;
+  }
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    var feedback = document.querySelector("#recovery-feedback");
+    feedback.className = "feedback error";
+    feedback.textContent = "O envio de codigo por e-mail ainda precisa ser configurado no servidor.";
   });
 }
 

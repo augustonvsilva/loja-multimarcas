@@ -54,9 +54,7 @@
     { id: 10, brand: "Hugo Boss", category: "Tenis", hasSizes: false, hasNumbers: true, stock: 5, name: "Tênis Urban Tailor", description: "Tenis com linhas premium e acabamento urbano, criado para destacar o visual com conforto.", price: 629.9, cost: 372.1, sizes: [], numbers: ["39", "40", "41", "42", "43", "44"], image: buildImage("HUGO BOSS", "Urban Tailor", "#99761b"), featured: false }
   ];
 
-  var defaultUsers = [
-    { id: 1, name: "Administrador", email: "admin@jsmultimarcas.com", password: "admin123", role: "admin" }
-  ];
+  var defaultUsers = [];
 
   var defaultOrders = [
     {
@@ -256,6 +254,19 @@
 
     if (!localStorage.getItem(STORAGE_KEYS.users)) {
       writeJSON(STORAGE_KEYS.users, defaultUsers);
+    } else {
+      // Remove a antiga conta de demonstracao que continha credenciais expostas.
+      var users = readJSON(STORAGE_KEYS.users, []);
+      var cleanedUsers = users.filter(function (user) {
+        return String(user.email || "").toLowerCase() !== "admin@jsmultimarcas.com";
+      });
+      if (cleanedUsers.length !== users.length) {
+        writeJSON(STORAGE_KEYS.users, cleanedUsers);
+        var session = readJSON(STORAGE_KEYS.session, null);
+        if (session && String(session.email || "").toLowerCase() === "admin@jsmultimarcas.com") {
+          localStorage.removeItem(STORAGE_KEYS.session);
+        }
+      }
     }
 
     if (!localStorage.getItem(STORAGE_KEYS.cart)) {
