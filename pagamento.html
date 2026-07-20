@@ -41,15 +41,14 @@
       <div class="container payment-layout">
         <form id="payment-form" class="admin-card">
           <h2>Pagamento seguro</h2>
-          <p class="muted-text">Ao continuar, voce sera direcionado ao ambiente seguro do Mercado Pago para escolher PIX ou cartao.</p>
+          <p class="muted-text">Escolha PIX ou cartao sem sair da loja. Os dados sao processados com seguranca pelo Mercado Pago.</p>
 
           <div class="form-grid" style="margin-top: 20px;">
-            <div class="field-full">
-              <button class="btn" type="submit">Ir para o Mercado Pago</button>
-            </div>
+            <div id="paymentBrick_container" class="field-full"></div>
           </div>
 
-          <div id="payment-feedback" class="feedback">O pedido so sera registrado quando o Mercado Pago confirmar o pagamento.</div>
+          <div id="payment-feedback" class="feedback">Carregando as opcoes de pagamento seguras...</div>
+          <div id="pix-result" class="field-full"></div>
         </form>
 
         <aside id="payment-summary"></aside>
@@ -67,6 +66,7 @@
     // API publicada no Render. Deixe vazio apenas ao executar pelo servidor local.
     window.JSMP_API_BASE_URL = "https://loja-multimarcas.onrender.com";
   </script>
+  <script src="https://sdk.mercadopago.com/js/v2"></script>
   <script src="./js/payment.js"></script>
 </body>
 </html>

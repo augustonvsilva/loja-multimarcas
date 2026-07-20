@@ -230,6 +230,15 @@ textarea {
   transform: none;
 }
 
+.pix-qr-code {
+  display: block;
+  width: min(240px, 100%);
+  margin: 16px auto;
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px;
+}
+
 .hero {
   padding: 72px 0 36px;
 }

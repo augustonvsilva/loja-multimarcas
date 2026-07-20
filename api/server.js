@@ -1,6 +1,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const ROOT_DIR = path.resolve(__dirname, "..");
 const TOKEN_CACHE_MARGIN_MS = 60 * 1000;
@@ -399,6 +400,102 @@ async function handleMercadoPagoWebhook(request, response) {
   }
 }
 
+function buildCheckoutItems(items, shipping, shippingLabel) {
+  const checkoutItems = (Array.isArray(items) ? items : []).map((item) => {
+    const quantity = Math.max(1, Math.floor(Number(item.quantity) || 0));
+    const unitPrice = Number(item.price);
+    if (!item.name || !Number.isFinite(unitPrice) || unitPrice <= 0) {
+      throw new Error("Um item do pedido e invalido.");
+    }
+    return { id: String(item.productId || item.id || item.name), title: String(item.name).slice(0, 256), quantity, currency_id: "BRL", unit_price: Number(unitPrice.toFixed(2)) };
+  });
+  if (!checkoutItems.length) {
+    throw new Error("O carrinho esta vazio.");
+  }
+  if (Number.isFinite(Number(shipping)) && Number(shipping) > 0) {
+    checkoutItems.push({ id: "frete", title: "Frete - " + String(shippingLabel || "Entrega").slice(0, 120), quantity: 1, currency_id: "BRL", unit_price: Number(Number(shipping).toFixed(2)) });
+  }
+  return checkoutItems;
+}
+
+function getCheckoutTotal(items, shipping) {
+  return Number((items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0) + 0).toFixed(2));
+}
+
+function getMercadoPagoWebhookUrl() {
+  const webhookUrl = validHttpUrl(process.env.MERCADOPAGO_WEBHOOK_URL);
+  return webhookUrl && webhookUrl.protocol === "https:" ? webhookUrl.href : undefined;
+}
+
+function handleMercadoPagoConfig(request, response) {
+  const publicKey = String(process.env.MERCADOPAGO_PUBLIC_KEY || "");
+  if (!publicKey || publicKey.includes("sua_chave_publica")) {
+    sendJson(response, 503, { ok: false, message: "Configure o MERCADOPAGO_PUBLIC_KEY no Render." });
+    return;
+  }
+  sendJson(response, 200, { ok: true, publicKey });
+}
+
+async function processMercadoPagoBrickPayment(request, response) {
+  try {
+    if (!hasMercadoPagoCredentials()) {
+      sendJson(response, 503, { ok: false, message: "Configure o MERCADOPAGO_ACCESS_TOKEN no Render." });
+      return;
+    }
+    const payload = await readRequestBody(request);
+    const formData = payload.formData || {};
+    const order = payload.order || {};
+    const items = buildCheckoutItems(order.items, order.shipping, order.shippingLabel);
+    const transactionAmount = getCheckoutTotal(items, 0);
+    const payer = formData.payer || {};
+    const payerEmail = String(payer.email || formData.payer_email || order.customerEmail || "").trim();
+    const paymentMethod = String(formData.payment_method_id || "").trim();
+    if (!payerEmail || !paymentMethod) {
+      sendJson(response, 400, { ok: false, message: "Informe o email e o meio de pagamento." });
+      return;
+    }
+
+    const payment = {
+      transaction_amount: transactionAmount,
+      description: "Pedido JS Multimarcas Premium",
+      payment_method_id: paymentMethod,
+      external_reference: createExternalReference(),
+      payer: { email: payerEmail }
+    };
+    if (formData.token) payment.token = String(formData.token);
+    if (formData.installments) payment.installments = Number(formData.installments);
+    if (formData.issuer_id) payment.issuer_id = String(formData.issuer_id);
+    if (payer.identification && payer.identification.type && payer.identification.number) {
+      payment.payer.identification = { type: String(payer.identification.type), number: String(payer.identification.number) };
+    }
+    const webhookUrl = getMercadoPagoWebhookUrl();
+    if (webhookUrl) payment.notification_url = webhookUrl;
+
+    const data = await requestJson("https://api.mercadopago.com/v1/payments", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + process.env.MERCADOPAGO_ACCESS_TOKEN,
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "X-Idempotency-Key": crypto.randomUUID()
+      },
+      body: JSON.stringify(payment)
+    });
+    const transactionData = data.point_of_interaction && data.point_of_interaction.transaction_data;
+    sendJson(response, 201, {
+      ok: true,
+      id: data.id,
+      status: data.status,
+      statusDetail: data.status_detail,
+      paymentType: data.payment_type_id || "",
+      paymentMethod: data.payment_method_id || paymentMethod,
+      pix: transactionData ? { qrCodeBase64: transactionData.qr_code_base64, qrCode: transactionData.qr_code, ticketUrl: transactionData.ticket_url } : null
+    });
+  } catch (error) {
+    sendJson(response, 502, { ok: false, message: error.message || "Nao foi possivel processar o pagamento." });
+  }
+}
+
 async function handleShippingQuote(request, response) {
   try {
     const payload = await readRequestBody(request);
@@ -457,6 +554,14 @@ const server = http.createServer((request, response) => {
 
   if (request.method === "POST" && request.url === "/api/payments/checkout") {
     createMercadoPagoCheckout(request, response);
+    return;
+  }
+  if (request.method === "GET" && request.url === "/api/payments/config") {
+    handleMercadoPagoConfig(request, response);
+    return;
+  }
+  if (request.method === "POST" && request.url === "/api/payments/process") {
+    processMercadoPagoBrickPayment(request, response);
     return;
   }
   if (request.method === "GET" && request.url.startsWith("/api/payments/status")) {

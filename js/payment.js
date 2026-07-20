@@ -1,147 +1,90 @@
-var PENDING_CHECKOUT_KEY = "jsmp_pending_checkout";
-
 document.addEventListener("DOMContentLoaded", function () {
-  var form = document.querySelector("#payment-form");
-  var orderNode = document.querySelector("#payment-summary");
-  if (!form || !orderNode) return;
-
   renderPaymentSummary();
-  checkReturnedPayment();
-  form.addEventListener("submit", function (event) {
-    event.preventDefault();
-    startMercadoPagoCheckout(form);
-  });
+  setupPaymentBrick();
 });
+
+function getApiBaseUrl() { return window.JSMP_API_BASE_URL || window.location.origin; }
+function apiUrl(path) { return getApiBaseUrl().replace(/\/$/, "") + path; }
 
 function renderPaymentSummary() {
   var items = window.JSMP.getCartDetails();
   var orderNode = document.querySelector("#payment-summary");
-  if (!items.length) {
-    orderNode.innerHTML = '<div class="summary-card"><p class="muted-text">Nenhum item no carrinho.</p></div>';
-    return;
-  }
-
+  if (!items.length) { orderNode.innerHTML = '<div class="summary-card"><p class="muted-text">Nenhum item no carrinho.</p></div>'; return; }
   var subtotal = items.reduce(function (sum, item) { return sum + item.subtotal; }, 0);
-  var shippingQuote = getCheckoutShipping();
-  var total = subtotal + shippingQuote.amount;
-  orderNode.innerHTML = [
-    '<div class="summary-card">', "<h3>Seu pedido</h3>", '<div class="summary-list">',
-    items.map(function (item) {
-      return '<div class="summary-line"><span>' + item.name + " x" + item.quantity + '</span><strong>' + formatCurrency(item.subtotal) + "</strong></div>";
-    }).join(""),
-    '<div class="summary-line"><span>' + shippingQuote.label + '</span><strong>' + formatCurrency(shippingQuote.amount) + "</strong></div>",
-    '<div class="summary-line"><span>Total final</span><strong class="product-price">' + formatCurrency(total) + "</strong></div>",
-    "</div></div>"
-  ].join("");
+  var shipping = getCheckoutShipping();
+  orderNode.innerHTML = '<div class="summary-card"><h3>Seu pedido</h3><div class="summary-list">' + items.map(function (item) {
+    return '<div class="summary-line"><span>' + item.name + " x" + item.quantity + '</span><strong>' + formatCurrency(item.subtotal) + "</strong></div>";
+  }).join("") + '<div class="summary-line"><span>' + shipping.label + '</span><strong>' + formatCurrency(shipping.amount) + '</strong></div><div class="summary-line"><span>Total final</span><strong class="product-price">' + formatCurrency(subtotal + shipping.amount) + "</strong></div></div></div>";
 }
 
-function getApiBaseUrl() {
-  return window.JSMP_API_BASE_URL || window.location.origin;
-}
-
-function apiUrl(path) {
-  return getApiBaseUrl().replace(/\/$/, "") + path;
-}
-
-async function startMercadoPagoCheckout(form) {
+async function setupPaymentBrick() {
   var items = window.JSMP.getCartDetails();
-  if (!items.length) {
-    setPaymentFeedback("Seu carrinho esta vazio.", "error");
-    return;
-  }
-
-  var subtotal = items.reduce(function (sum, item) { return sum + item.subtotal; }, 0);
-  var shippingQuote = getCheckoutShipping();
-  var session = window.JSMP.getSession();
-  var orderPayload = {
-    customerName: session ? session.name : "Cliente visitante",
-    customerEmail: session ? session.email : "",
-    paymentMethod: "mercado-pago",
-    shippingMethod: shippingQuote.method,
-    subtotal: subtotal,
-    shipping: shippingQuote.amount,
-    total: subtotal + shippingQuote.amount,
-    items: items.map(function (item) {
-      return { productId: item.productId, name: item.name, brand: item.brand, quantity: item.quantity, price: item.price, subtotal: item.subtotal };
-    })
-  };
-
-  form.querySelector("button[type=submit]").disabled = true;
-  setPaymentFeedback("Criando checkout seguro...", "");
+  if (!items.length) { setPaymentFeedback("Adicione itens ao carrinho para continuar.", "error"); return; }
   try {
-    var response = await fetch(apiUrl("/api/payments/checkout"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(Object.assign({}, orderPayload, {
-        shippingLabel: shippingQuote.label,
-        siteUrl: window.location.origin + window.location.pathname.replace(/\/[^/]*$/, "")
-      }))
+    var configResponse = await fetch(apiUrl("/api/payments/config"));
+    var config = await configResponse.json();
+    if (!configResponse.ok || !config.ok) throw new Error(config.message || "Nao foi possivel carregar o pagamento.");
+    if (!window.MercadoPago) throw new Error("O Mercado Pago nao carregou. Atualize a pagina e tente novamente.");
+
+    var order = buildOrderPayload();
+    var mp = new MercadoPago(config.publicKey, { locale: "pt-BR" });
+    var bricksBuilder = mp.bricks();
+    await bricksBuilder.create("payment", "paymentBrick_container", {
+      initialization: { amount: order.total, payer: { email: order.customerEmail || "" } },
+      customization: { paymentMethods: { creditCard: "all", debitCard: "all", bankTransfer: "all" } },
+      callbacks: {
+        onReady: function () { setPaymentFeedback("Escolha a forma de pagamento para concluir.", ""); },
+        onSubmit: function (data) { return submitBrickPayment(data.formData, order); },
+        onError: function () { setPaymentFeedback("Nao foi possivel carregar uma opcao de pagamento.", "error"); }
+      }
     });
-    var data = await response.json();
-    if (!response.ok || !data.ok || !data.checkoutUrl) throw new Error(data.message || "Nao foi possivel iniciar o pagamento.");
-    localStorage.setItem(PENDING_CHECKOUT_KEY, JSON.stringify({ externalReference: data.externalReference, order: orderPayload }));
-    window.location.assign(data.checkoutUrl);
-  } catch (error) {
-    setPaymentFeedback(error.message || "Erro ao conectar ao Mercado Pago.", "error");
-    form.querySelector("button[type=submit]").disabled = false;
-  }
+  } catch (error) { setPaymentFeedback(error.message || "Erro ao iniciar o pagamento.", "error"); }
 }
 
-async function checkReturnedPayment() {
-  var query = new URLSearchParams(window.location.search);
-  var paymentId = query.get("payment_id") || query.get("collection_id");
-  if (!paymentId) return;
+function buildOrderPayload() {
+  var items = window.JSMP.getCartDetails();
+  var shipping = getCheckoutShipping();
+  var session = window.JSMP.getSession();
+  var subtotal = items.reduce(function (sum, item) { return sum + item.subtotal; }, 0);
+  return { customerName: session ? session.name : "Cliente visitante", customerEmail: session ? session.email : "", shippingMethod: shipping.method, shipping: shipping.amount, shippingLabel: shipping.label, subtotal: subtotal, total: Number((subtotal + shipping.amount).toFixed(2)), items: items.map(function (item) { return { productId: item.productId, name: item.name, brand: item.brand, quantity: item.quantity, price: item.price, subtotal: item.subtotal }; }) };
+}
 
-  var pending = readPendingCheckout();
-  if (!pending) {
-    setPaymentFeedback("Pagamento recebido. Nao localizamos o pedido neste navegador.", "error");
+function submitBrickPayment(formData, order) {
+  return new Promise(function (resolve, reject) {
+    fetch(apiUrl("/api/payments/process"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ formData: formData, order: order }) })
+      .then(function (response) { return response.json().then(function (data) { return { response: response, data: data }; }); })
+      .then(function (result) {
+        if (!result.response.ok || !result.data.ok) throw new Error(result.data.message || "Pagamento nao processado.");
+        handlePaymentResult(result.data, order);
+        resolve();
+      })
+      .catch(function (error) { setPaymentFeedback(error.message || "Erro ao processar pagamento.", "error"); reject(); });
+  });
+}
+
+function handlePaymentResult(payment, order) {
+  if (payment.status === "approved") {
+    order.paymentMethod = resolvePaymentMethod(payment.paymentType);
+    var result = window.JSMP.createOrder(order);
+    if (!result.ok) { setPaymentFeedback(result.message, "error"); return; }
+    window.JSMP.clearCart(); clearCartShipping(); setupHeader(); renderPaymentSummary();
+    setPaymentFeedback("Pagamento aprovado pelo Mercado Pago. Pedido registrado com sucesso.", "success");
     return;
   }
-
-  setPaymentFeedback("Confirmando pagamento com o Mercado Pago...", "");
-  try {
-    var response = await fetch(apiUrl("/api/payments/status?payment_id=" + encodeURIComponent(paymentId)));
-    var data = await response.json();
-    if (!response.ok || !data.ok || data.externalReference !== pending.externalReference) throw new Error(data.message || "Nao foi possivel validar o pagamento.");
-
-    if (data.status === "approved") {
-      pending.order.paymentMethod = resolvePaymentMethod(data.paymentType);
-      var orderResult = window.JSMP.createOrder(pending.order);
-      if (!orderResult.ok) throw new Error(orderResult.message);
-      localStorage.removeItem(PENDING_CHECKOUT_KEY);
-      window.JSMP.clearCart();
-      clearCartShipping();
-      setupHeader();
-      renderPaymentSummary();
-      setPaymentFeedback("Pagamento aprovado pelo Mercado Pago. Pedido registrado com sucesso.", "success");
-    } else if (data.status === "pending" || data.status === "in_process") {
-      setPaymentFeedback("Seu pagamento esta " + (data.status === "pending" ? "pendente" : "em analise") + ". Aguarde a confirmacao.", "");
-    } else {
-      localStorage.removeItem(PENDING_CHECKOUT_KEY);
-      setPaymentFeedback("O pagamento nao foi aprovado. Voce pode tentar novamente.", "error");
-    }
-  } catch (error) {
-    setPaymentFeedback(error.message || "Erro ao confirmar o pagamento.", "error");
+  if (payment.pix && payment.pix.qrCodeBase64) {
+    showPixCode(payment.pix, payment.id);
+    setPaymentFeedback("PIX gerado. Escaneie o QR Code ou copie o codigo para pagar.", "success");
+    return;
   }
+  setPaymentFeedback("Pagamento em processamento: " + (payment.statusDetail || payment.status) + ".", "");
 }
 
-function readPendingCheckout() {
-  try { return JSON.parse(localStorage.getItem(PENDING_CHECKOUT_KEY) || "null"); } catch (error) { return null; }
+function showPixCode(pix, paymentId) {
+  var node = document.querySelector("#pix-result");
+  node.innerHTML = '<div class="summary-card"><h3>Pagamento PIX</h3><img class="pix-qr-code" src="data:image/png;base64,' + pix.qrCodeBase64 + '" alt="QR Code PIX"><label for="pix-copy-code">PIX Copia e Cola</label><textarea id="pix-copy-code" class="input" readonly>' + escapePaymentText(pix.qrCode || "") + '</textarea><p class="muted-text">Pagamento #' + paymentId + " aguardando confirmacao.</p></div>";
 }
 
-function resolvePaymentMethod(type) {
-  if (type === "bank_transfer") return "pix";
-  if (type === "debit_card") return "debito";
-  return "credito";
-}
-
-function setPaymentFeedback(message, tone) {
-  var feedback = document.querySelector("#payment-feedback");
-  if (!feedback) return;
-  feedback.className = "feedback" + (tone ? " " + tone : "");
-  feedback.textContent = message;
-}
-
-function getCheckoutShipping() {
-  return getCartShipping() || { method: "retirada", label: "Retirada na loja", amount: 0, deadline: "no mesmo dia util", description: "Retirada na loja." };
-}
+function resolvePaymentMethod(type) { return type === "bank_transfer" ? "pix" : type === "debit_card" ? "debito" : "credito"; }
+function setPaymentFeedback(message, tone) { var node = document.querySelector("#payment-feedback"); node.className = "feedback" + (tone ? " " + tone : ""); node.textContent = message; }
+function escapePaymentText(value) { return String(value || "").replace(/[&<>\"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]; }); }
+function getCheckoutShipping() { return getCartShipping() || { method: "retirada", label: "Retirada na loja", amount: 0 }; }
