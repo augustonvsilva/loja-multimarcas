@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JS Multimarcas Premium | Carrinho</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body data-page="carrinho">
+  <header class="site-header">
+    <div class="container header-bar">
+      <a class="brand" href="./index.html">
+        <div class="brand-mark"><img src="./assets/logo.png" alt="Logo JS Multimarcas Premium"></div>
+        <div class="brand-copy">
+          <strong>JS Multimarcas Premium</strong>
+          <span>Seu carrinho</span>
+        </div>
+      </a>
+      <nav class="main-nav">
+        <a href="./index.html" data-page-link="home">Home</a>
+        <a href="./produtos.html" data-page-link="produtos">Produtos</a>
+        <a href="./login.html" data-page-link="login" data-user-status>Entrar</a>
+        <a class="nav-pill active" href="./carrinho.html" data-page-link="carrinho" data-cart-count>Carrinho (0)</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <!-- Estrutura do carrinho com itens e resumo -->
+    <section class="page-hero">
+      <div class="container">
+        <div class="page-banner glass-panel reveal">
+          <span class="eyebrow">Carrinho</span>
+          <h1 class="page-title">Revise seu pedido antes de finalizar.</h1>
+          <p class="page-subtitle">Atualize quantidades, remova itens ou siga para o pagamento premium.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container cart-layout">
+        <div id="cart-items" class="summary-grid"></div>
+        <aside id="cart-summary"></aside>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-copy">© <span data-year></span> JS Multimarcas Premium.</div>
+  </footer>
+
+  <script src="./js/storage.js"></script>
+  <script src="./js/app.js"></script>
+  <script src="./js/cart.js"></script>
+</body>
+</html>
+

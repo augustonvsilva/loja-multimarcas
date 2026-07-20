@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JS Multimarcas Premium | Home</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body data-page="home">
+  <!-- Cabecalho principal com navegação compartilhada -->
+  <header class="site-header">
+    <div class="container header-bar">
+      <a class="brand" href="./index.html">
+        <div class="brand-mark"><img src="./assets/logo.png" alt="Logo JS Multimarcas Premium"></div>
+        <div class="brand-copy">
+          <strong>JS Multimarcas Premium</strong>
+          <span>Luxo urbano em preto e dourado</span>
+        </div>
+      </a>
+      <nav class="main-nav">
+        <a href="./index.html" data-page-link="home">Home</a>
+        <a href="./produtos.html" data-page-link="produtos">Produtos</a>
+        <a href="./login.html" data-page-link="login" data-user-status>Entrar</a>
+        <a class="nav-pill" href="./carrinho.html" data-page-link="carrinho" data-cart-count>Carrinho (0)</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <!-- Banner hero com chamada principal -->
+    <section class="hero">
+      <div class="container">
+        <div class="hero-panel reveal">
+          <div class="hero-copy">
+            <span class="eyebrow">Colecao premium 2026</span>
+            <h1>Moda multimarcas com presenca, luxo e identidade.</h1>
+            <p>Explore selecoes exclusivas de Nike, Adidas, Lacoste, Armani e Hugo Boss em uma vitrine sofisticada criada para quem valoriza elegancia, conforto e atitude.</p>
+            <div class="hero-actions">
+              <a class="btn" href="./produtos.html">Ver produtos</a>
+              <a class="btn-secondary" href="./cadastro.html">Criar conta</a>
+            </div>
+          </div>
+          <div class="hero-visual">
+            <div class="hero-showcase">
+              <img src="./assets/logo.png" alt="Identidade visual JS Multimarcas Premium">
+              <div class="showcase-badge">
+                <span class="eyebrow">Loja fisica</span>
+                <strong>Pan-Americano</strong>
+              </div>
+            </div>
+            <div class="hero-stats">
+              <div class="stat-card">
+                <span class="eyebrow">Destaque</span>
+                <strong>+10</strong>
+                <p class="muted-text">Produtos premium cadastrados para iniciar sua loja.</p>
+              </div>
+              <div class="stat-card">
+                <span class="eyebrow">Selecao</span>
+                <strong>Premium</strong>
+                <p class="muted-text">Pecas escolhidas para entregar estilo, elegancia e presenca em cada detalhe.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Blocos que reforçam os diferenciais da loja -->
+    <section class="section">
+      <div class="container">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Experiencia premium</span>
+            <h2>Uma vitrine pensada para marcas que definem estilo.</h2>
+          </div>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card reveal">
+            <h3>Curadoria elegante</h3>
+            <p class="muted-text">Selecoes com visual refinado, foco em pecas premium e navegacao intuitiva.</p>
+          </article>
+          <article class="feature-card reveal">
+            <h3>Entrega flexivel</h3>
+            <p class="muted-text">Retirada na loja, entrega local para Jaragua e envio estimado por Correios PAC ou Sedex.</p>
+          </article>
+          <article class="feature-card reveal">
+            <h3>Marcas de destaque</h3>
+            <p class="muted-text">Colecoes selecionadas das principais marcas para elevar o seu estilo com exclusividade.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Secao de marcas clicaveis -->
+    <section class="section">
+      <div class="container">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Marcas</span>
+            <h2>Selecione sua assinatura de estilo.</h2>
+            <p>Cada universo de marca agora leva para um catalogo filtrado e atualizado dinamicamente.</p>
+          </div>
+        </div>
+        <div class="brand-grid" data-dynamic-brand-grid></div>
+      </div>
+    </section>
+
+    <!-- Produtos em destaque -->
+    <section class="section">
+      <div class="container">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Mais vendidos</span>
+            <h2>Destaques da curadoria JS Multimarcas Premium.</h2>
+          </div>
+          <a class="btn-secondary" href="./produtos.html">Catalogo completo</a>
+        </div>
+        <div class="product-grid" data-product-grid="featured" data-limit="4"></div>
+      </div>
+    </section>
+
+    <!-- Endereco da loja fisica -->
+    <section class="section">
+      <div class="container store-panel reveal">
+        <div>
+          <span class="eyebrow">Nossa loja</span>
+          <h2>Atendimento presencial JS Multimarcas Premium.</h2>
+          <p class="muted-text">Visite a loja, retire seu pedido ou combine entrega local para a regiao do Pan-Americano, Jaragua-SP.</p>
+        </div>
+        <address>
+          Rua Jacinto Pereira, 151<br>
+          Pan-Americano, Jaragua-SP<br>
+          Retirada, entrega local e Correios
+        </address>
+      </div>
+    </section>
+  </main>
+
+  <!-- Rodape institucional -->
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <h4>JS Multimarcas Premium</h4>
+        <p class="muted-text">Loja conceito criada para entregar uma experiencia elegante, moderna e responsiva para o seu e-commerce de roupas.</p>
+      </div>
+      <div>
+        <h4>Navegacao</h4>
+        <p><a href="./produtos.html">Produtos</a></p>
+        <p><a href="./carrinho.html">Carrinho</a></p>
+        <p><a href="./pagamento.html">Pagamento</a></p>
+      </div>
+      <div>
+        <h4>Conta</h4>
+        <p><a href="./login.html">Login</a></p>
+        <p><a href="./cadastro.html">Cadastro</a></p>
+        <p><a href="./produtos.html">Minha area</a></p>
+      </div>
+      <div>
+        <h4>Contato</h4>
+        <p class="muted-text">contato@jsmultimarcas.com</p>
+        <p class="muted-text">(11) 99999-0000</p>
+        <p class="muted-text">Rua Jacinto Pereira, 151 - Pan-Americano, Jaragua-SP</p>
+      </div>
+    </div>
+    <div class="container footer-copy">© <span data-year></span> JS Multimarcas Premium. Todos os direitos reservados.</div>
+  </footer>
+
+  <script src="./js/storage.js"></script>
+  <script src="./js/app.js"></script>
+  <script src="./js/catalog.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JS Multimarcas Premium | Pagamento</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body data-page="pagamento">
+  <header class="site-header">
+    <div class="container header-bar">
+      <a class="brand" href="./index.html">
+        <div class="brand-mark"><img src="./assets/logo.png" alt="Logo JS Multimarcas Premium"></div>
+        <div class="brand-copy">
+          <strong>JS Multimarcas Premium</strong>
+          <span>Pagamento</span>
+        </div>
+      </a>
+      <nav class="main-nav">
+        <a href="./index.html" data-page-link="home">Home</a>
+        <a href="./produtos.html" data-page-link="produtos">Produtos</a>
+        <a href="./login.html" data-page-link="login" data-user-status>Entrar</a>
+        <a class="nav-pill" href="./carrinho.html" data-page-link="carrinho" data-cart-count>Carrinho (0)</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <!-- Formulario de pagamento com metodos simulados -->
+    <section class="page-hero">
+      <div class="container">
+        <div class="page-banner glass-panel reveal">
+          <span class="eyebrow">Checkout</span>
+          <h1 class="page-title">Finalize sua compra premium.</h1>
+          <p class="page-subtitle">Escolha cartao de credito, debito ou PIX. O fluxo abaixo faz uma simulacao completa com validacao basica.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container payment-layout">
+        <form id="payment-form" class="admin-card">
+          <h2>Metodo de pagamento</h2>
+          <div class="button-row">
+            <label class="tag"><input id="credit-option" type="radio" name="paymentMethod" value="credito" checked> Credito</label>
+            <label class="tag"><input type="radio" name="paymentMethod" value="debito"> Debito</label>
+            <label class="tag"><input type="radio" name="paymentMethod" value="pix"> PIX</label>
+          </div>
+
+          <div class="form-grid" style="margin-top: 20px;">
+            <div class="field-full" data-card-field>
+              <label for="card-name">Nome impresso no cartao</label>
+              <input class="input" id="card-name" name="cardName" type="text" placeholder="Nome completo">
+            </div>
+            <div class="field-full" data-card-field>
+              <label for="card-number">Numero do cartao</label>
+              <input class="input" id="card-number" name="cardNumber" type="text" maxlength="19" placeholder="0000 0000 0000 0000">
+            </div>
+            <div class="field" data-card-field>
+              <label for="card-expiry">Validade</label>
+              <input class="input" id="card-expiry" name="cardExpiry" type="text" placeholder="12/29">
+            </div>
+            <div class="field" data-card-field>
+              <label for="card-code">CVV</label>
+              <input class="input" id="card-code" name="cardCode" type="text" maxlength="4" placeholder="123">
+            </div>
+            <div id="pix-box" class="field-full" style="display: none;">
+              <label>Pagamento via PIX</label>
+              <div class="auth-note">Use a chave PIX ficticia: <strong>premium@jsmultimarcas.com</strong>. Ao confirmar, o sistema aprova a simulacao instantaneamente.</div>
+            </div>
+            <div class="field-full">
+              <button class="btn" type="submit">Confirmar pagamento</button>
+            </div>
+          </div>
+
+          <div id="payment-feedback" class="feedback">A compra sera simulada e o carrinho sera limpo automaticamente ao aprovar o pagamento.</div>
+        </form>
+
+        <aside id="payment-summary"></aside>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-copy">© <span data-year></span> JS Multimarcas Premium.</div>
+  </footer>
+
+  <script src="./js/storage.js"></script>
+  <script src="./js/app.js"></script>
+  <script src="./js/payment.js"></script>
+</body>
+</html>
+

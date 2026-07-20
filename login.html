@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JS Multimarcas Premium | Login</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body data-page="login">
+  <header class="site-header">
+    <div class="container header-bar">
+      <a class="brand" href="./index.html">
+        <div class="brand-mark"><img src="./assets/logo.png" alt="Logo JS Multimarcas Premium"></div>
+        <div class="brand-copy">
+          <strong>JS Multimarcas Premium</strong>
+          <span>Area de acesso</span>
+        </div>
+      </a>
+      <nav class="main-nav">
+        <a href="./index.html" data-page-link="home">Home</a>
+        <a href="./produtos.html" data-page-link="produtos">Produtos</a>
+        <a href="./login.html" data-page-link="login" data-user-status>Entrar</a>
+        <a class="nav-pill" href="./carrinho.html" data-page-link="carrinho" data-cart-count>Carrinho (0)</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <!-- Formulario de login com simulacao front-end -->
+    <section class="form-card glass-panel reveal">
+      <span class="eyebrow">Login</span>
+      <h1 class="page-title">Acesse sua conta premium</h1>
+      <p class="page-subtitle">Use o login administrativo padrao para abrir o painel: <strong>admin@jsmultimarcas.com</strong> e <strong>admin123</strong>.</p>
+
+      <form id="login-form" class="form-grid">
+        <div class="field-full">
+          <label for="login-email">Email</label>
+          <input class="input" id="login-email" name="email" type="email" placeholder="seuemail@exemplo.com" required>
+        </div>
+        <div class="field-full">
+          <label for="login-password">Senha</label>
+          <input class="input" id="login-password" name="password" type="password" placeholder="Digite sua senha" required>
+        </div>
+        <div class="field-full">
+          <button class="btn" type="submit">Entrar</button>
+        </div>
+      </form>
+
+      <div id="login-feedback" class="feedback">Seu login sera salvo em LocalStorage para manter a sessao.</div>
+      <p class="auth-note">Ainda nao tem conta? <a href="./cadastro.html">Criar cadastro</a>.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-copy">© <span data-year></span> JS Multimarcas Premium.</div>
+  </footer>
+
+  <script src="./js/storage.js"></script>
+  <script src="./js/app.js"></script>
+  <script src="./js/auth.js"></script>
+</body>
+</html>
+

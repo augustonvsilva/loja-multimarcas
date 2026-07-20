@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JS Multimarcas Premium | Admin Faturamento</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-page="admin" data-admin-view="billing" data-base-path="../">
+  <header class="site-header">
+    <div class="container header-bar">
+      <a class="brand" href="../index.html">
+        <div class="brand-mark"><img src="../assets/logo.png" alt="Logo JS Multimarcas Premium"></div>
+        <div class="brand-copy">
+          <strong>JS Multimarcas Premium</strong>
+          <span>Admin • Faturamento</span>
+        </div>
+      </a>
+      <nav class="main-nav">
+        <a href="../index.html" data-page-link="home">Home</a>
+        <a href="../produtos.html" data-page-link="produtos">Produtos</a>
+        <a href="../login.html" data-page-link="login" data-user-status>Entrar</a>
+        <a class="nav-pill" href="../carrinho.html" data-page-link="carrinho" data-cart-count>Carrinho (0)</a>
+        <button class="btn-secondary" type="button" data-logout>Sair</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="page-hero">
+      <div class="container">
+        <div class="page-banner glass-panel reveal">
+          <span class="eyebrow">Admin</span>
+          <h1 class="page-title">Faturamento e financas</h1>
+          <p class="page-subtitle">Monitore vendas, despesas e saldo liquido em uma pagina dedicada so para o financeiro.</p>
+          <div class="admin-tabs">
+            <a class="admin-tab" href="./produtos.html" data-admin-link="products">Produtos</a>
+            <a class="admin-tab" href="./faturamento.html" data-admin-link="billing">Faturamento</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div id="admin-gate" class="feedback error" style="display: none;">Acesso restrito. Esta area administrativa nao fica visivel para clientes. Faça login com um usuario admin em <a href="../login.html">login.html</a>.</div>
+        <div id="admin-panel" class="admin-main-column" style="display: none;" data-admin-view>
+          <section class="admin-card">
+            <div class="section-heading" style="margin-bottom: 18px;">
+              <div>
+                <span class="eyebrow">Faturamento</span>
+                <h2>Controle financeiro da operação</h2>
+                <p class="muted-text">Acompanhe vendas, ticket medio, despesas e saldo liquido sem misturar com o cadastro de produtos.</p>
+              </div>
+            </div>
+            <div id="billing-summary" class="summary-grid"></div>
+          </section>
+
+          <div class="admin-finance-grid">
+            <div class="info-card">
+              <div class="table-row" style="margin-bottom: 16px;">
+                <div>
+                  <h3 style="margin: 0;">Ultimos pedidos</h3>
+                  <p class="muted-text" style="margin: 6px 0 0;">Vendas registradas automaticamente no checkout.</p>
+                </div>
+                <select id="billing-filter" class="select billing-filter">
+                  <option value="all">Todos os periodos</option>
+                  <option value="month">Ultimos 30 dias</option>
+                  <option value="week">Ultimos 7 dias</option>
+                </select>
+              </div>
+              <div id="billing-orders"></div>
+            </div>
+
+            <div class="info-card">
+              <h3 style="margin-top: 0;">Despesas operacionais</h3>
+              <form id="expense-form" class="form-grid">
+                <div class="field-full">
+                  <label for="expense-description">Descricao</label>
+                  <input class="input" id="expense-description" name="description" type="text" placeholder="Ex: frete, marketing, embalagem" required>
+                </div>
+                <div class="field">
+                  <label for="expense-category">Categoria</label>
+                  <input class="input" id="expense-category" name="category" type="text" placeholder="Marketing" required>
+                </div>
+                <div class="field">
+                  <label for="expense-amount">Valor</label>
+                  <input class="input" id="expense-amount" name="amount" type="number" min="0" step="0.01" placeholder="150.00" required>
+                </div>
+                <div class="field-full">
+                  <button class="btn" type="submit">Lancar despesa</button>
+                </div>
+              </form>
+              <div id="expense-feedback" class="feedback">As despesas ajudam a calcular o saldo liquido da loja.</div>
+              <div id="expense-list" class="admin-list" style="margin-top: 18px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-copy">© <span data-year></span> JS Multimarcas Premium.</div>
+  </footer>
+
+  <script src="../js/storage.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/admin.js"></script>
+</body>
+</html>
+
