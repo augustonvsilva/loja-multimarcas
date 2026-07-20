@@ -39,6 +39,10 @@ function setupHeader() {
     if (session && session.role !== "admin") {
       statusNode.setAttribute("href", getBasePath() + "produtos.html");
     }
+
+    if (session) {
+      setupAccountMenu(statusNode, session);
+    }
   }
 
   if (cartCountNode) {
@@ -53,6 +57,47 @@ function setupHeader() {
       window.JSMP.logout();
       window.location.href = getBasePath() + "login.html";
     });
+  });
+}
+
+function setupAccountMenu(statusNode, session) {
+  if (statusNode.parentElement.classList.contains("account-menu")) {
+    return;
+  }
+
+  var wrapper = document.createElement("div");
+  wrapper.className = "account-menu";
+  statusNode.parentNode.insertBefore(wrapper, statusNode);
+  wrapper.appendChild(statusNode);
+  statusNode.setAttribute("href", getBasePath() + "conta.html");
+  statusNode.setAttribute("aria-haspopup", "true");
+
+  var menu = document.createElement("div");
+  menu.className = "account-dropdown";
+  menu.innerHTML = [
+    '<div class="account-dropdown-header">',
+    '<strong>' + escapeHeaderText(session.name) + '</strong>',
+    '<span>' + escapeHeaderText(session.email) + '</span>',
+    "</div>",
+    '<a href="' + getBasePath() + 'conta.html">Minha conta</a>',
+    '<a href="' + getBasePath() + 'conta.html#pedidos">Meus pedidos</a>',
+    '<button type="button" data-account-logout>Sair da conta</button>'
+  ].join("");
+  wrapper.appendChild(menu);
+
+  menu.querySelector("[data-account-logout]").addEventListener("click", function () {
+    window.JSMP.logout();
+    window.location.href = getBasePath() + "login.html";
+  });
+
+  document.querySelectorAll(".main-nav > [data-logout]").forEach(function (button) {
+    button.remove();
+  });
+}
+
+function escapeHeaderText(value) {
+  return String(value || "").replace(/[&<>\"']/g, function (character) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[character];
   });
 }
 
