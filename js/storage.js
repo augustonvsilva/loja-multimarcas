@@ -631,6 +631,7 @@
     register: register,
     login: login,
     getSession: getSession,
+    saveSession: saveSession,
     logout: logout,
     getCart: getCart,
     addToCart: addToCart,

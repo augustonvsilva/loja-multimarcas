@@ -12,12 +12,15 @@ function setupLoginForm() {
   }
 
   var feedback = document.querySelector("#login-feedback");
-  form.addEventListener("submit", function (event) {
+  form.addEventListener("submit", async function (event) {
     event.preventDefault();
 
     var email = form.email.value.trim();
     var password = form.password.value.trim();
-    var result = window.JSMP.login(email, password);
+    var result = await loginAsAdmin(email, password);
+    if (!result.ok) {
+      result = window.JSMP.login(email, password);
+    }
 
     if (!result.ok) {
       feedback.className = "feedback error";
@@ -31,6 +34,22 @@ function setupLoginForm() {
       window.location.href = result.user.role === "admin" ? "./admin/produtos.html" : "./produtos.html";
     }, 900);
   });
+}
+
+async function loginAsAdmin(email, password) {
+  try {
+    var response = await fetch(getApiUrl("/api/auth/admin/login"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email, password: password })
+    });
+    var data = await response.json();
+    if (!response.ok || !data.ok) return { ok: false };
+    window.JSMP.saveSession(data.user);
+    return { ok: true, user: data.user };
+  } catch (error) {
+    return { ok: false };
+  }
 }
 
 function setupRecoveryForm() {

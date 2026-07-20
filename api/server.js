@@ -294,6 +294,72 @@ function hasMercadoPagoCredentials() {
   return Boolean(token && !token.includes("seu_access_token"));
 }
 
+function hasAdminCredentials() {
+  return Boolean(process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD && process.env.AUTH_SECRET);
+}
+
+function safeEquals(left, right) {
+  const a = Buffer.from(String(left || ""));
+  const b = Buffer.from(String(right || ""));
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+function createAdminToken(email) {
+  const payload = Buffer.from(JSON.stringify({ email, role: "admin", exp: Date.now() + 8 * 60 * 60 * 1000 })).toString("base64url");
+  const signature = crypto.createHmac("sha256", process.env.AUTH_SECRET).update(payload).digest("base64url");
+  return payload + "." + signature;
+}
+
+function verifyAdminToken(token) {
+  const parts = String(token || "").split(".");
+  if (parts.length !== 2) return null;
+  const expected = crypto.createHmac("sha256", process.env.AUTH_SECRET || "").update(parts[0]).digest("base64url");
+  if (!safeEquals(parts[1], expected)) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(parts[0], "base64url").toString("utf8"));
+    if (payload.role !== "admin" || payload.exp < Date.now() || String(payload.email).toLowerCase() !== String(process.env.ADMIN_EMAIL).toLowerCase()) return null;
+    return payload;
+  } catch (error) {
+    return null;
+  }
+}
+
+async function handleAdminLogin(request, response) {
+  try {
+    if (!hasAdminCredentials()) {
+      sendJson(response, 503, { ok: false, message: "Acesso administrativo ainda nao foi configurado." });
+      return;
+    }
+    const payload = await readRequestBody(request);
+    if (!safeEquals(String(payload.email || "").toLowerCase(), String(process.env.ADMIN_EMAIL).toLowerCase()) || !safeEquals(payload.password, process.env.ADMIN_PASSWORD)) {
+      sendJson(response, 401, { ok: false, message: "Email ou senha invalidos." });
+      return;
+    }
+    const email = String(process.env.ADMIN_EMAIL).toLowerCase();
+    sendJson(response, 200, { ok: true, user: { name: "Administrador", email, role: "admin", adminToken: createAdminToken(email) } });
+  } catch (error) {
+    sendJson(response, 400, { ok: false, message: "Dados de login invalidos." });
+  }
+}
+
+async function handleAdminSessionVerification(request, response) {
+  try {
+    if (!hasAdminCredentials()) {
+      sendJson(response, 503, { ok: false });
+      return;
+    }
+    const payload = await readRequestBody(request);
+    const session = verifyAdminToken(payload.token);
+    if (!session) {
+      sendJson(response, 401, { ok: false });
+      return;
+    }
+    sendJson(response, 200, { ok: true, user: { name: "Administrador", email: session.email, role: "admin" } });
+  } catch (error) {
+    sendJson(response, 400, { ok: false });
+  }
+}
+
 function validHttpUrl(value) {
   try {
     const url = new URL(value);
@@ -554,6 +620,14 @@ const server = http.createServer((request, response) => {
 
   if (request.method === "POST" && request.url === "/api/payments/checkout") {
     createMercadoPagoCheckout(request, response);
+    return;
+  }
+  if (request.method === "POST" && request.url === "/api/auth/admin/login") {
+    handleAdminLogin(request, response);
+    return;
+  }
+  if (request.method === "POST" && request.url === "/api/auth/admin/verify") {
+    handleAdminSessionVerification(request, response);
     return;
   }
   if (request.method === "GET" && request.url === "/api/payments/config") {

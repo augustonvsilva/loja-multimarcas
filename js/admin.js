@@ -1,11 +1,11 @@
 // Painel administrativo com CRUD simples persistido no LocalStorage.
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", async function () {
   var adminRoot = document.querySelector("[data-admin-view]");
   if (!adminRoot) {
     return;
   }
 
-  if (!protectAdminPage()) {
+  if (!await protectAdminPage()) {
     return;
   }
 
@@ -27,18 +27,29 @@ document.addEventListener("DOMContentLoaded", function () {
 
 var adminFormImages = [];
 
-function protectAdminPage() {
+async function protectAdminPage() {
   var session = window.JSMP.getSession();
   var gate = document.querySelector("#admin-gate");
   var panel = document.querySelector("#admin-panel");
 
-  if (!session || session.role !== "admin") {
+  if (!session || session.role !== "admin" || !session.adminToken) {
     if (gate) {
       gate.style.display = "block";
     }
     if (panel) {
       panel.style.display = "none";
     }
+    return false;
+  }
+
+  try {
+    var response = await fetch(getApiUrl("/api/auth/admin/verify"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: session.adminToken }) });
+    var data = await response.json();
+    if (!response.ok || !data.ok) throw new Error("Sessao invalida");
+  } catch (error) {
+    window.JSMP.logout();
+    if (gate) gate.style.display = "block";
+    if (panel) panel.style.display = "none";
     return false;
   }
 

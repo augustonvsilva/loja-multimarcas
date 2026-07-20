@@ -8,6 +8,20 @@ document.addEventListener("DOMContentLoaded", function () {
 var SHIPPING_STORAGE_KEY = "jsmp_cart_shipping";
 var STORE_REGION_LABEL = "Pan-Americano, Jaragua-SP";
 
+function getApiBaseUrl() {
+  if (window.JSMP_API_BASE_URL) {
+    return window.JSMP_API_BASE_URL;
+  }
+  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+    return window.location.origin;
+  }
+  return "https://loja-multimarcas.onrender.com";
+}
+
+function getApiUrl(path) {
+  return getApiBaseUrl().replace(/\/$/, "") + path;
+}
+
 function getBasePath() {
   return document.body.getAttribute("data-base-path") || "./";
 }

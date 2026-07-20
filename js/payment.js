@@ -3,8 +3,7 @@ document.addEventListener("DOMContentLoaded", function () {
   setupPaymentBrick();
 });
 
-function getApiBaseUrl() { return window.JSMP_API_BASE_URL || window.location.origin; }
-function apiUrl(path) { return getApiBaseUrl().replace(/\/$/, "") + path; }
+function apiUrl(path) { return getApiUrl(path); }
 
 function renderPaymentSummary() {
   var items = window.JSMP.getCartDetails();
