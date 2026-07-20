@@ -282,9 +282,121 @@ function readRequestBody(request) {
 function sendJson(response, statusCode, payload) {
   response.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
-    "Cache-Control": "no-store"
+    "Cache-Control": "no-store",
+    "Access-Control-Allow-Origin": "*"
   });
   response.end(JSON.stringify(payload));
+}
+
+function hasMercadoPagoCredentials() {
+  const token = String(process.env.MERCADOPAGO_ACCESS_TOKEN || "");
+  return Boolean(token && !token.includes("seu_access_token"));
+}
+
+function validHttpUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:" ? url : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function createExternalReference() {
+  return "jsmp-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+}
+
+async function createMercadoPagoCheckout(request, response) {
+  try {
+    if (!hasMercadoPagoCredentials()) {
+      sendJson(response, 503, { ok: false, message: "Configure o MERCADOPAGO_ACCESS_TOKEN no arquivo .env." });
+      return;
+    }
+
+    const payload = await readRequestBody(request);
+    const items = Array.isArray(payload.items) ? payload.items : [];
+    if (!items.length) {
+      sendJson(response, 400, { ok: false, message: "O carrinho esta vazio." });
+      return;
+    }
+
+    const checkoutItems = items.map((item) => {
+      const quantity = Math.max(1, Math.floor(Number(item.quantity) || 0));
+      const unitPrice = Number(item.price);
+      if (!item.name || !Number.isFinite(unitPrice) || unitPrice <= 0) {
+        throw new Error("Um item do pedido e invalido.");
+      }
+      return { id: String(item.productId || item.id || item.name), title: String(item.name).slice(0, 256), quantity, currency_id: "BRL", unit_price: Number(unitPrice.toFixed(2)) };
+    });
+
+    const shipping = Number(payload.shipping || 0);
+    if (Number.isFinite(shipping) && shipping > 0) {
+      checkoutItems.push({ id: "frete", title: "Frete - " + String(payload.shippingLabel || "Entrega").slice(0, 120), quantity: 1, currency_id: "BRL", unit_price: Number(shipping.toFixed(2)) });
+    }
+
+    const externalReference = createExternalReference();
+    const preference = {
+      items: checkoutItems,
+      external_reference: externalReference,
+      statement_descriptor: "JS MULTIMARCAS",
+      payment_methods: { excluded_payment_types: [{ id: "ticket" }] }
+    };
+    const payerEmail = String(payload.customerEmail || "").trim();
+    if (payerEmail) {
+      preference.payer = { email: payerEmail };
+    }
+
+    const siteUrl = validHttpUrl(process.env.MERCADOPAGO_SITE_URL || payload.siteUrl);
+    if (siteUrl && siteUrl.hostname !== "localhost" && siteUrl.hostname !== "127.0.0.1") {
+      const returnUrl = new URL("pagamento.html", siteUrl.href.endsWith("/") ? siteUrl.href : siteUrl.href + "/").href;
+      preference.back_urls = { success: returnUrl, pending: returnUrl, failure: returnUrl };
+      preference.auto_return = "approved";
+    }
+    const webhookUrl = validHttpUrl(process.env.MERCADOPAGO_WEBHOOK_URL);
+    if (webhookUrl && webhookUrl.protocol === "https:") {
+      preference.notification_url = webhookUrl.href;
+    }
+
+    const data = await requestJson("https://api.mercadopago.com/checkout/preferences", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + process.env.MERCADOPAGO_ACCESS_TOKEN, "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(preference)
+    });
+    sendJson(response, 201, { ok: true, preferenceId: data.id, externalReference, checkoutUrl: data.sandbox_init_point || data.init_point });
+  } catch (error) {
+    sendJson(response, 502, { ok: false, message: error.message || "Nao foi possivel criar o checkout do Mercado Pago." });
+  }
+}
+
+async function getMercadoPagoPaymentStatus(request, response) {
+  try {
+    if (!hasMercadoPagoCredentials()) {
+      sendJson(response, 503, { ok: false, message: "Configure o MERCADOPAGO_ACCESS_TOKEN no arquivo .env." });
+      return;
+    }
+    const url = new URL(request.url, "http://localhost");
+    const paymentId = String(url.searchParams.get("payment_id") || "").replace(/\D/g, "");
+    if (!paymentId) {
+      sendJson(response, 400, { ok: false, message: "payment_id invalido." });
+      return;
+    }
+    const data = await requestJson("https://api.mercadopago.com/v1/payments/" + paymentId, {
+      headers: { "Authorization": "Bearer " + process.env.MERCADOPAGO_ACCESS_TOKEN, "Accept": "application/json" }
+    });
+    sendJson(response, 200, { ok: true, id: data.id, status: data.status, externalReference: data.external_reference, paymentMethod: data.payment_method_id || "mercado-pago", paymentType: data.payment_type_id || "" });
+  } catch (error) {
+    sendJson(response, 502, { ok: false, message: error.message || "Nao foi possivel consultar o pagamento." });
+  }
+}
+
+async function handleMercadoPagoWebhook(request, response) {
+  try {
+    const payload = await readRequestBody(request);
+    console.log("Webhook Mercado Pago recebido:", JSON.stringify(payload));
+    sendJson(response, 200, { ok: true });
+  } catch (error) {
+    sendJson(response, 400, { ok: false, message: "Webhook invalido." });
+  }
 }
 
 async function handleShippingQuote(request, response) {
@@ -337,6 +449,25 @@ function serveStatic(request, response) {
 }
 
 const server = http.createServer((request, response) => {
+  if (request.method === "OPTIONS") {
+    response.writeHead(204, { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type" });
+    response.end();
+    return;
+  }
+
+  if (request.method === "POST" && request.url === "/api/payments/checkout") {
+    createMercadoPagoCheckout(request, response);
+    return;
+  }
+  if (request.method === "GET" && request.url.startsWith("/api/payments/status")) {
+    getMercadoPagoPaymentStatus(request, response);
+    return;
+  }
+  if (request.method === "POST" && request.url === "/api/payments/webhook") {
+    handleMercadoPagoWebhook(request, response);
+    return;
+  }
+
   if (request.method === "POST" && request.url === "/api/shipping/quote") {
     handleShippingQuote(request, response);
     return;

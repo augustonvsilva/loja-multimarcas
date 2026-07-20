@@ -608,7 +608,8 @@ function formatPaymentMethod(method) {
   var labels = {
     credito: "Credito",
     debito: "Debito",
-    pix: "PIX"
+    pix: "PIX",
+    "mercado-pago": "Mercado Pago"
   };
 
   return labels[method] || method;

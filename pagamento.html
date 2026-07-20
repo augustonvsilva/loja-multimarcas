@@ -40,40 +40,16 @@
     <section class="section">
       <div class="container payment-layout">
         <form id="payment-form" class="admin-card">
-          <h2>Metodo de pagamento</h2>
-          <div class="button-row">
-            <label class="tag"><input id="credit-option" type="radio" name="paymentMethod" value="credito" checked> Credito</label>
-            <label class="tag"><input type="radio" name="paymentMethod" value="debito"> Debito</label>
-            <label class="tag"><input type="radio" name="paymentMethod" value="pix"> PIX</label>
-          </div>
+          <h2>Pagamento seguro</h2>
+          <p class="muted-text">Ao continuar, voce sera direcionado ao ambiente seguro do Mercado Pago para escolher PIX ou cartao.</p>
 
           <div class="form-grid" style="margin-top: 20px;">
-            <div class="field-full" data-card-field>
-              <label for="card-name">Nome impresso no cartao</label>
-              <input class="input" id="card-name" name="cardName" type="text" placeholder="Nome completo">
-            </div>
-            <div class="field-full" data-card-field>
-              <label for="card-number">Numero do cartao</label>
-              <input class="input" id="card-number" name="cardNumber" type="text" maxlength="19" placeholder="0000 0000 0000 0000">
-            </div>
-            <div class="field" data-card-field>
-              <label for="card-expiry">Validade</label>
-              <input class="input" id="card-expiry" name="cardExpiry" type="text" placeholder="12/29">
-            </div>
-            <div class="field" data-card-field>
-              <label for="card-code">CVV</label>
-              <input class="input" id="card-code" name="cardCode" type="text" maxlength="4" placeholder="123">
-            </div>
-            <div id="pix-box" class="field-full" style="display: none;">
-              <label>Pagamento via PIX</label>
-              <div class="auth-note">Use a chave PIX ficticia: <strong>premium@jsmultimarcas.com</strong>. Ao confirmar, o sistema aprova a simulacao instantaneamente.</div>
-            </div>
             <div class="field-full">
-              <button class="btn" type="submit">Confirmar pagamento</button>
+              <button class="btn" type="submit">Ir para o Mercado Pago</button>
             </div>
           </div>
 
-          <div id="payment-feedback" class="feedback">A compra sera simulada e o carrinho sera limpo automaticamente ao aprovar o pagamento.</div>
+          <div id="payment-feedback" class="feedback">O pedido so sera registrado quando o Mercado Pago confirmar o pagamento.</div>
         </form>
 
         <aside id="payment-summary"></aside>
@@ -87,6 +63,10 @@
 
   <script src="./js/storage.js"></script>
   <script src="./js/app.js"></script>
+  <script>
+    // Deixe vazio ao executar pelo servidor local. No GitHub Pages, informe a URL HTTPS da sua API publicada.
+    window.JSMP_API_BASE_URL = "";
+  </script>
   <script src="./js/payment.js"></script>
 </body>
 </html>
