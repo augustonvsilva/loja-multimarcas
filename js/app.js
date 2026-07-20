@@ -88,6 +88,9 @@ function setupAccountMenu(statusNode, session) {
 
   var menu = document.createElement("div");
   menu.className = "account-dropdown";
+  var adminLinks = session.role === "admin"
+    ? '<div class="account-dropdown-divider"></div><a class="account-admin-link" href="' + getBasePath() + 'admin/produtos.html">Gestao de produtos</a><a class="account-admin-link" href="' + getBasePath() + 'admin/faturamento.html">Faturamento</a>'
+    : "";
   menu.innerHTML = [
     '<div class="account-dropdown-header">',
     '<strong>' + escapeHeaderText(session.name) + '</strong>',
@@ -95,6 +98,7 @@ function setupAccountMenu(statusNode, session) {
     "</div>",
     '<a href="' + getBasePath() + 'conta.html">Minha conta</a>',
     '<a href="' + getBasePath() + 'conta.html#pedidos">Meus pedidos</a>',
+    adminLinks,
     '<button type="button" data-account-logout>Sair da conta</button>'
   ].join("");
   wrapper.appendChild(menu);

@@ -169,7 +169,7 @@ textarea {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  width: 220px;
+  width: 236px;
   padding: 8px;
   border: 1px solid rgba(212, 175, 55, 0.28);
   border-radius: 14px;
@@ -180,6 +180,16 @@ textarea {
   transform: translateY(-6px);
   transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
   z-index: 30;
+}
+
+.account-dropdown-divider {
+  height: 1px;
+  margin: 6px 2px;
+  background: rgba(212, 175, 55, 0.18);
+}
+
+.account-dropdown .account-admin-link {
+  color: var(--gold-strong);
 }
 
 .account-menu:hover .account-dropdown,
@@ -761,6 +771,27 @@ textarea {
   gap: 24px;
 }
 
+.cart-layout > .summary-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.admin-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(440px, 0.86fr);
+}
+
+.admin-layout .admin-card,
+.cart-item > div {
+  min-width: 0;
+}
+
+#admin-products {
+  overflow-x: auto;
+}
+
+#admin-products .order-table {
+  min-width: 680px;
+}
+
 .admin-main-column,
 .admin-side-column {
   display: grid;
@@ -994,7 +1025,7 @@ textarea {
 
 .cart-item {
   display: grid;
-  grid-template-columns: 110px 1fr auto;
+  grid-template-columns: 110px minmax(0, 1fr) auto;
   gap: 18px;
   padding: 18px;
   border-radius: 18px;
@@ -1135,6 +1166,10 @@ textarea {
     grid-template-columns: 1fr 1fr;
   }
 
+  .cart-layout > .summary-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .hero-copy,
   .hero-visual,
   .page-banner,
@@ -1144,6 +1179,12 @@ textarea {
   .admin-card,
   .info-card {
     padding: 26px;
+  }
+}
+
+@media (max-width: 1120px) {
+  .admin-layout {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
