@@ -23,6 +23,10 @@ document.addEventListener("DOMContentLoaded", async function () {
     renderBillingDashboard();
     setupBillingControls();
   }
+
+  if (document.body.getAttribute("data-admin-view") === "orders" && typeof renderAdminOrders === "function") {
+    renderAdminOrders();
+  }
 });
 
 var adminFormImages = [];

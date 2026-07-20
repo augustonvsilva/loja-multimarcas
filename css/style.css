@@ -249,6 +249,16 @@ textarea {
   padding: 10px;
 }
 
+.delivery-address-grid { margin-top: 10px; }
+.admin-orders-list { display: grid; gap: 18px; }
+.admin-order-card { padding: 24px; border: 1px solid var(--line); border-radius: var(--radius); background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); }
+.admin-order-header { display: flex; justify-content: space-between; gap: 20px; align-items: start; padding-bottom: 18px; border-bottom: 1px solid rgba(212,175,55,.14); }
+.admin-order-header h2 { margin: 8px 0 0; }
+.admin-order-details { display: grid; grid-template-columns: 1.2fr .8fr 1fr; gap: 18px; padding-top: 18px; }
+.admin-order-details > div { display: grid; gap: 7px; }
+.admin-order-details span { color: var(--gold-strong); font-size: .82rem; text-transform: uppercase; letter-spacing: .08em; }
+.admin-order-details small { color: var(--muted); }
+
 .hero {
   padding: 72px 0 36px;
 }

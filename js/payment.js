@@ -25,15 +25,17 @@ async function setupPaymentBrick() {
     if (!configResponse.ok || !config.ok) throw new Error(config.message || "Nao foi possivel carregar o pagamento.");
     if (!window.MercadoPago) throw new Error("O Mercado Pago nao carregou. Atualize a pagina e tente novamente.");
 
-    var order = buildOrderPayload();
     var mp = new MercadoPago(config.publicKey, { locale: "pt-BR" });
     var bricksBuilder = mp.bricks();
     await bricksBuilder.create("payment", "paymentBrick_container", {
-      initialization: { amount: order.total, payer: { email: order.customerEmail || "" } },
+      initialization: { amount: getCheckoutTotal(), payer: { email: (window.JSMP.getSession() || {}).email || "" } },
       customization: { paymentMethods: { creditCard: "all", debitCard: "all", bankTransfer: "all" } },
       callbacks: {
         onReady: function () { setPaymentFeedback("Escolha a forma de pagamento para concluir.", ""); },
-        onSubmit: function (data) { return submitBrickPayment(data.formData, order); },
+        onSubmit: function (data) {
+          try { return submitBrickPayment(data.formData, buildOrderPayload()); }
+          catch (error) { setPaymentFeedback(error.message, "error"); return Promise.reject(error); }
+        },
         onError: function () { setPaymentFeedback("Nao foi possivel carregar uma opcao de pagamento.", "error"); }
       }
     });
@@ -45,7 +47,19 @@ function buildOrderPayload() {
   var shipping = getCheckoutShipping();
   var session = window.JSMP.getSession();
   var subtotal = items.reduce(function (sum, item) { return sum + item.subtotal; }, 0);
-  return { customerName: session ? session.name : "Cliente visitante", customerEmail: session ? session.email : "", shippingMethod: shipping.method, shipping: shipping.amount, shippingLabel: shipping.label, subtotal: subtotal, total: Number((subtotal + shipping.amount).toFixed(2)), items: items.map(function (item) { return { productId: item.productId, name: item.name, brand: item.brand, quantity: item.quantity, price: item.price, subtotal: item.subtotal }; }) };
+  return { customerName: session ? session.name : "Cliente visitante", customerEmail: session ? session.email : "", shippingMethod: shipping.method, shipping: shipping.amount, shippingLabel: shipping.label, deliveryAddress: getDeliveryAddress(shipping), subtotal: subtotal, total: Number((subtotal + shipping.amount).toFixed(2)), items: items.map(function (item) { return { productId: item.productId, name: item.name, brand: item.brand, quantity: item.quantity, size: item.size || "", number: item.number || "", price: item.price, subtotal: item.subtotal }; }) };
+}
+
+function getCheckoutTotal() {
+  var items = window.JSMP.getCartDetails();
+  var shipping = getCheckoutShipping();
+  return Number((items.reduce(function (sum, item) { return sum + item.subtotal; }, 0) + shipping.amount).toFixed(2));
+}
+
+function getDeliveryAddress(shipping) {
+  var address = { street: document.querySelector("#delivery-street").value.trim(), number: document.querySelector("#delivery-number").value.trim(), complement: document.querySelector("#delivery-complement").value.trim(), neighborhood: document.querySelector("#delivery-neighborhood").value.trim(), city: document.querySelector("#delivery-city").value.trim(), cep: shipping.cep || "" };
+  if (shipping.method !== "retirada" && (!address.street || !address.number || !address.neighborhood || !address.city)) throw new Error("Informe o endereco completo para a entrega.");
+  return address;
 }
 
 function submitBrickPayment(formData, order) {

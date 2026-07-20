@@ -571,6 +571,8 @@
       customerEmail: payload.customerEmail || "",
       paymentMethod: payload.paymentMethod,
       shippingMethod: payload.shippingMethod || "retirada",
+      shippingLabel: payload.shippingLabel || "Retirada na loja",
+      deliveryAddress: payload.deliveryAddress || null,
       status: "paid",
       createdAt: new Date().toISOString(),
       subtotal: payload.subtotal,

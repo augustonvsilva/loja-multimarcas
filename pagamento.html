@@ -44,6 +44,17 @@
           <p class="muted-text">Escolha PIX ou cartao sem sair da loja. Os dados sao processados com seguranca pelo Mercado Pago.</p>
 
           <div class="form-grid" style="margin-top: 20px;">
+            <div id="delivery-address-fields" class="field-full">
+              <label>Endereco para entrega</label>
+              <p class="muted-text">Para retirada na loja, o endereco nao e necessario.</p>
+              <div class="form-grid delivery-address-grid">
+                <div class="field-full"><input class="input" id="delivery-street" type="text" placeholder="Rua, avenida ou logradouro"></div>
+                <div class="field"><input class="input" id="delivery-number" type="text" placeholder="Numero"></div>
+                <div class="field"><input class="input" id="delivery-complement" type="text" placeholder="Complemento (opcional)"></div>
+                <div class="field"><input class="input" id="delivery-neighborhood" type="text" placeholder="Bairro"></div>
+                <div class="field"><input class="input" id="delivery-city" type="text" placeholder="Cidade / UF"></div>
+              </div>
+            </div>
             <div id="paymentBrick_container" class="field-full"></div>
           </div>
 
