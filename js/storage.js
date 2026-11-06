@@ -11,12 +11,7 @@
   var PRODUCTS_CACHE_MS = 5 * 60 * 1000;
   var DEFAULT_API = "https://loja-multimarcas.onrender.com";
 
-  // Limpa dados da versao antiga (catalogo/usuarios/pedidos guardados no navegador).
-  try {
-    ["jsmp_products", "jsmp_brands", "jsmp_categories", "jsmp_users", "jsmp_orders", "jsmp_expenses", "jsmp_session"].forEach(function (key) {
-      localStorage.removeItem(key);
-    });
-  } catch (error) {}
+  // Dados da versao antiga (jsmp_products, jsmp_orders...) sao ignorados, mas nao apagados.
 
   function readJSON(key, fallback) {
     try {
