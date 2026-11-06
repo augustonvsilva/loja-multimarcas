@@ -4,8 +4,8 @@
 window.JSMP_STORE = {
   name: "JS Multimarcas Premium",
   email: "contato@jsmultimarcas.com",
-  phone: "(11) 99999-0000",
-  whatsapp: "5511999990000",
+  phone: "(11) 95142-8703",
+  whatsapp: "5511951428703",
   address: "Rua Jacinto Pereira, 151 - Pan-Americano, Jaraguá - São Paulo/SP",
   cep: "02992-130",
   cnpj: "",
