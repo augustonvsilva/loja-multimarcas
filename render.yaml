@@ -1,0 +1,41 @@
+# Configuracao do servico da API no Render (https://render.com/docs/blueprint-spec).
+# Os valores secretos (sync: false) sao preenchidos no painel do Render.
+services:
+  - type: web
+    name: loja-multimarcas
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: SITE_URL
+        value: https://augustonvsilva.github.io/loja-multimarcas
+      - key: ALLOWED_ORIGINS
+        value: https://augustonvsilva.github.io
+      - key: MERCADOPAGO_PUBLIC_KEY
+        sync: false
+      - key: MERCADOPAGO_ACCESS_TOKEN
+        sync: false
+      - key: MERCADOPAGO_WEBHOOK_URL
+        value: https://loja-multimarcas.onrender.com/api/payments/webhook
+      - key: MERCADOPAGO_WEBHOOK_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: STORE_NOTIFY_EMAIL
+        sync: false

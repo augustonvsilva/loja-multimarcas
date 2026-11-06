@@ -1,3 +1,123 @@
 <!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>JS Multimarcas Premium | Pedidos</title><link rel="stylesheet" href="../css/style.css"></head>
-<body data-page="admin" data-base-path="../" data-admin-view="orders"><header class="site-header"><div class="container header-bar"><a class="brand" href="../index.html"><div class="brand-mark"><img src="../assets/logo.png" alt="Logo JS Multimarcas Premium"></div><div class="brand-copy"><strong>JS Multimarcas Premium</strong><span>Admin • Pedidos</span></div></a><nav class="main-nav"><a href="../index.html" data-page-link="home">Home</a><a href="../produtos.html" data-page-link="produtos">Produtos</a><a href="../login.html" data-page-link="login" data-user-status>Entrar</a><a class="nav-pill" href="../carrinho.html" data-page-link="carrinho" data-cart-count>Carrinho (0)</a><button class="btn-secondary" type="button" data-logout>Sair</button></nav></div></header><main class="page-shell"><section class="page-hero"><div class="container"><div class="page-banner glass-panel reveal"><span class="eyebrow">Admin</span><h1 class="page-title">Pedidos recebidos</h1><p class="page-subtitle">Consulte produtos, tamanhos, entrega e endereco informado pelo cliente.</p><div class="admin-tabs"><a class="admin-tab" href="./produtos.html" data-admin-link="products">Produtos</a><a class="admin-tab" href="./pedidos.html" data-admin-link="orders">Pedidos</a><a class="admin-tab" href="./faturamento.html" data-admin-link="billing">Faturamento</a></div></div></div></section><section class="section"><div class="container"><div id="admin-gate" class="feedback error" style="display:none;">Acesso restrito. Entre com um usuario administrador.</div><div id="admin-panel" data-admin-view style="display:none;"><div id="admin-orders" class="admin-orders-list"></div></div></div></section></main><footer class="site-footer"><div class="container footer-copy">© <span data-year></span> JS Multimarcas Premium.</div></footer><script src="../js/storage.js"></script><script src="../js/app.js"></script><script src="../js/orders.js"></script><script src="../js/admin.js"></script></body></html>
+<!-- Arquivo gerado por scripts/build-pages.js a partir de src/pages/admin/pedidos.html. Edite a fonte, nao este arquivo. -->
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pedidos | JS Multimarcas Premium</title>
+  <meta name="description" content="Moda premium multimarcas: Nike, Adidas, Lacoste, Armani e Hugo Boss. Compre online com PIX ou cartão, retire na loja no Pan-Americano (Jaraguá-SP) ou receba em casa.">
+  <meta name="theme-color" content="#050505">
+  <meta name="robots" content="noindex, nofollow">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="JS Multimarcas Premium">
+  <meta property="og:title" content="Pedidos | JS Multimarcas Premium">
+  <meta property="og:description" content="Moda premium multimarcas: Nike, Adidas, Lacoste, Armani e Hugo Boss. Compre online com PIX ou cartão, retire na loja no Pan-Americano (Jaraguá-SP) ou receba em casa.">
+  <meta property="og:url" content="https://augustonvsilva.github.io/loja-multimarcas/admin/pedidos.html">
+  <meta property="og:image" content="https://augustonvsilva.github.io/loja-multimarcas/assets/og-image.png">
+  <meta property="og:locale" content="pt_BR">
+  <link rel="icon" type="image/png" href="../assets/favicon.png">
+  <link rel="apple-touch-icon" href="../assets/icon-192.png">
+  <link rel="manifest" href="../site.webmanifest">
+  <link rel="preconnect" href="https://loja-multimarcas.onrender.com" crossorigin>
+  <link rel="stylesheet" href="../css/style.css?v=7b52f9ca31">
+</head>
+<body data-page="admin" data-base-path="../" data-admin-view="orders">
+  <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+  <header class="site-header">
+    <div class="container header-bar">
+      <a class="brand" href="../index.html">
+        <div class="brand-mark"><img src="../assets/logo-small.png" alt="" width="52" height="52"></div>
+        <div class="brand-copy">
+          <strong>JS Multimarcas Premium</strong>
+          <span>Painel administrativo</span>
+        </div>
+      </a>
+      <nav class="main-nav" aria-label="Principal">
+        <a href="../index.html" data-page-link="home">Início</a>
+        <a href="../produtos.html" data-page-link="produtos">Produtos</a>
+        <a href="../login.html" data-page-link="login" data-user-status>Entrar</a>
+        <a class="nav-pill" href="../carrinho.html" data-page-link="carrinho" data-cart-count>Carrinho (0)</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo" class="page-shell">
+    <section class="page-hero">
+      <div class="container">
+        <div class="page-banner glass-panel reveal">
+          <span class="eyebrow">Admin</span>
+          <h1 class="page-title">Pedidos</h1>
+          <div class="admin-tabs">
+            <a class="admin-tab" href="./pedidos.html" data-admin-link="orders">Pedidos</a>
+            <a class="admin-tab" href="./produtos.html" data-admin-link="products">Produtos</a>
+            <a class="admin-tab" href="./faturamento.html" data-admin-link="billing">Faturamento</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div id="admin-gate" class="feedback error" hidden>Área restrita. <a href="../login.html?next=admin/pedidos.html">Entre com a conta de administrador</a>.</div>
+        <div id="admin-panel" hidden>
+          <div class="table-row admin-toolbar">
+            <strong id="orders-counter"></strong>
+            <div class="inline-actions">
+              <select id="orders-filter" class="select" aria-label="Filtrar pedidos">
+                <option value="open">Para separar / enviar</option>
+                <option value="paid">Pagos</option>
+                <option value="preparing">Em separação</option>
+                <option value="shipped">Enviados</option>
+                <option value="delivered">Entregues</option>
+                <option value="pending">Aguardando pagamento</option>
+                <option value="cancelled">Cancelados</option>
+                <option value="all">Todos</option>
+              </select>
+              <button id="orders-refresh" class="btn-secondary" type="button">Atualizar</button>
+            </div>
+          </div>
+          <div id="admin-orders" class="admin-orders-list"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <h4>JS Multimarcas Premium</h4>
+        <p class="muted-text">Multimarcas premium no Pan-Americano, Jaraguá - SP. Peças selecionadas de Nike, Adidas, Lacoste, Armani e Hugo Boss, com retirada na loja e entrega para todo o Brasil.</p>
+      </div>
+      <div>
+        <h4>Loja</h4>
+        <p><a href="../produtos.html">Todos os produtos</a></p>
+        <p><a href="../carrinho.html">Carrinho</a></p>
+        <p><a href="../conta.html">Minha conta</a></p>
+      </div>
+      <div>
+        <h4>Ajuda</h4>
+        <p><a href="../trocas-e-devolucoes.html">Trocas e devoluções</a></p>
+        <p><a href="../privacidade.html">Política de privacidade</a></p>
+        <p><a href="../termos.html">Termos de uso</a></p>
+        <p><a data-store="whatsapp" href="#" target="_blank" rel="noopener">Fale no WhatsApp</a></p>
+      </div>
+      <div>
+        <h4>Contato</h4>
+        <p><a data-store="email" href="#"></a></p>
+        <p class="muted-text" data-store="phone"></p>
+        <p class="muted-text" data-store="address"></p>
+        <p class="muted-text" data-store="hours"></p>
+      </div>
+    </div>
+    <div class="container footer-copy">
+      <span>© <span data-year></span> JS Multimarcas Premium.</span>
+      <span data-store="cnpj" data-store-prefix="CNPJ " data-store-optional></span>
+      <span>Pagamentos processados com segurança pelo Mercado Pago: PIX, débito e crédito.</span>
+    </div>
+  </footer>
+
+  <script src="../js/storage.js?v=7b52f9ca31"></script>
+  <script src="../js/app.js?v=7b52f9ca31"></script>
+  <script src="../js/admin.js?v=7b52f9ca31"></script>
+</body>
+</html>

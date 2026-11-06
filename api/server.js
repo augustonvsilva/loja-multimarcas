@@ -1,14 +1,15 @@
+// Servidor HTTP da JS Multimarcas Premium: API + arquivos estaticos do site.
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
+const { loadEnvFile } = require("./env");
 
 const ROOT_DIR = path.resolve(__dirname, "..");
-const TOKEN_CACHE_MARGIN_MS = 60 * 1000;
-
 loadEnvFile(path.join(ROOT_DIR, ".env"));
 
-const PORT = Number(process.env.PORT || 3000);
+const { initDb, closeDb } = require("./db");
+const { HttpError, applyCors, applySecurityHeaders, sendJson } = require("./http");
+const { matchRoute } = require("./routes");
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -19,648 +20,120 @@ const MIME_TYPES = {
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
   ".svg": "image/svg+xml",
-  ".webp": "image/webp"
+  ".webp": "image/webp",
+  ".ico": "image/x-icon",
+  ".txt": "text/plain; charset=utf-8",
+  ".xml": "application/xml; charset=utf-8",
+  ".webmanifest": "application/manifest+json"
 };
 
-const CORREIOS_SERVICES = [
-  { code: "03298", method: "correios-pac", label: "Correios PAC" },
-  { code: "03220", method: "correios-sedex", label: "Correios Sedex" }
-];
-
-let tokenCache = null;
-
-function loadEnvFile(filePath) {
-  if (!fs.existsSync(filePath)) {
-    return;
-  }
-
-  fs.readFileSync(filePath, "utf8").split(/\r?\n/).forEach((line) => {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) {
-      return;
-    }
-
-    const separatorIndex = trimmed.indexOf("=");
-    if (separatorIndex === -1) {
-      return;
-    }
-
-    const key = trimmed.slice(0, separatorIndex).trim();
-    const value = trimmed.slice(separatorIndex + 1).trim().replace(/^["']|["']$/g, "");
-    if (key && typeof process.env[key] === "undefined") {
-      process.env[key] = value;
-    }
-  });
-}
-
-function normalizeCep(value) {
-  return String(value || "").replace(/\D/g, "").slice(0, 8);
-}
-
-function onlyNumber(value, fallback) {
-  const number = Number(value);
-  return Number.isFinite(number) && number > 0 ? number : fallback;
-}
-
-function getCorreiosBaseUrl(resource) {
-  const isHomologation = String(process.env.CORREIOS_ENV || "").toLowerCase() === "homologation";
-  if (resource === "preco") {
-    return isHomologation ? "https://apihom.correios.com.br/preco/v1" : "https://api.correios.com.br/preco/v1";
-  }
-  if (resource === "prazo") {
-    return isHomologation ? "https://apihom.correios.com.br/prazo/v3" : "https://api.correios.com.br/prazo/v3";
-  }
-  return isHomologation ? "https://apihom.correios.com.br/token/v1" : "https://api.correios.com.br/token/v1";
-}
-
-function hasCorreiosCredentials() {
-  return Boolean(
-    process.env.CORREIOS_USERNAME &&
-    process.env.CORREIOS_API_PASSWORD &&
-    process.env.CORREIOS_CARD_NUMBER
-  );
-}
-
-async function requestJson(url, options) {
-  const response = await fetch(url, options);
-  const text = await response.text();
-  let data = null;
-
-  try {
-    data = text ? JSON.parse(text) : null;
-  } catch (error) {
-    data = { raw: text };
-  }
-
-  if (!response.ok) {
-    const message = data && (data.msg || data.message || data.mensagem || data.raw);
-    throw new Error(message || "Erro ao consultar os Correios.");
-  }
-
-  return data;
-}
-
-async function getCorreiosToken() {
-  if (tokenCache && tokenCache.expiresAt > Date.now() + TOKEN_CACHE_MARGIN_MS) {
-    return tokenCache.token;
-  }
-
-  if (!hasCorreiosCredentials()) {
-    throw new Error("Credenciais dos Correios nao configuradas.");
-  }
-
-  const body = {
-    numero: process.env.CORREIOS_CARD_NUMBER,
-    contrato: process.env.CORREIOS_CONTRACT_NUMBER || undefined,
-    dr: process.env.CORREIOS_DR ? Number(process.env.CORREIOS_DR) : undefined
-  };
-
-  const data = await requestJson(getCorreiosBaseUrl("token") + "/autentica/cartaopostagem", {
-    method: "POST",
-    headers: {
-      "Authorization": "Basic " + Buffer.from(process.env.CORREIOS_USERNAME + ":" + process.env.CORREIOS_API_PASSWORD).toString("base64"),
-      "Content-Type": "application/json",
-      "Accept": "application/json"
-    },
-    body: JSON.stringify(body)
-  });
-
-  const token = data.token || data.accessToken || data.access_token;
-  if (!token) {
-    throw new Error("Token dos Correios nao retornado.");
-  }
-
-  const expiresAt = data.expiraEm
-    ? new Date(data.expiraEm).getTime()
-    : Date.now() + 50 * 60 * 1000;
-
-  tokenCache = { token, expiresAt };
-  return token;
-}
-
-function buildPackage(payload) {
-  const itemCount = Math.max(1, Number(payload.itemCount || 1));
-  const defaultWeight = onlyNumber(process.env.CORREIOS_DEFAULT_WEIGHT_GRAMS, 500);
-
-  return {
-    weight: Math.max(defaultWeight, defaultWeight * itemCount),
-    length: onlyNumber(payload.lengthCm || process.env.CORREIOS_DEFAULT_LENGTH_CM, 20),
-    width: onlyNumber(payload.widthCm || process.env.CORREIOS_DEFAULT_WIDTH_CM, 20),
-    height: onlyNumber(payload.heightCm || process.env.CORREIOS_DEFAULT_HEIGHT_CM, 10)
-  };
-}
-
-function buildCorreiosProductParams(service, payload) {
-  const originCep = normalizeCep(process.env.CORREIOS_ORIGIN_CEP || "02992130");
-  const destinationCep = normalizeCep(payload.cep);
-  const box = buildPackage(payload);
-
-  return {
-    coProduto: service.code,
-    nuRequisicao: service.method,
-    nuContrato: process.env.CORREIOS_CONTRACT_NUMBER || undefined,
-    nuDR: process.env.CORREIOS_DR ? Number(process.env.CORREIOS_DR) : undefined,
-    cepOrigem: originCep,
-    cepDestino: destinationCep,
-    psObjeto: String(box.weight),
-    tpObjeto: "2",
-    comprimento: String(box.length),
-    largura: String(box.width),
-    altura: String(box.height),
-    vlDeclarado: payload.subtotal ? String(Number(payload.subtotal).toFixed(2)) : undefined
-  };
-}
-
-function parsePrice(value) {
-  if (value === null || typeof value === "undefined") {
-    return null;
-  }
-
-  if (typeof value === "number") {
-    return value;
-  }
-
-  const normalized = String(value)
-    .replace(/[^\d,.-]/g, "")
-    .replace(/\./g, "")
-    .replace(",", ".");
-  const number = Number(normalized);
-  return Number.isFinite(number) ? number : null;
-}
-
-function extractPrice(row) {
-  return parsePrice(
-    row.pcFinal ||
-    row.precoFinal ||
-    row.valorFinal ||
-    row.vlFinal ||
-    row.valor ||
-    row.preco
-  );
-}
-
-function extractDeadline(row) {
-  const value = row.prazoEntrega || row.prazo || row.nuPrazoEntrega || row.qtPrazo;
-  return value ? String(value) : "";
-}
-
-async function quoteCorreios(payload) {
-  const token = await getCorreiosToken();
-  const priceParams = CORREIOS_SERVICES.map((service) => buildCorreiosProductParams(service, payload));
-  const deadlineParams = CORREIOS_SERVICES.map((service) => ({
-    coProduto: service.code,
-    nuRequisicao: service.method,
-    cepOrigem: normalizeCep(process.env.CORREIOS_ORIGIN_CEP || "02992130"),
-    cepDestino: normalizeCep(payload.cep)
-  }));
-
-  const [priceData, deadlineData] = await Promise.all([
-    requestJson(getCorreiosBaseUrl("preco") + "/nacional", {
-      method: "POST",
-      headers: {
-        "Authorization": "Bearer " + token,
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-      },
-      body: JSON.stringify({ idLote: "jsmp-preco", parametrosProduto: priceParams })
-    }),
-    requestJson(getCorreiosBaseUrl("prazo") + "/v1/nacional", {
-      method: "POST",
-      headers: {
-        "Authorization": "Bearer " + token,
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-      },
-      body: JSON.stringify({ idLote: "jsmp-prazo", parametrosPrazo: deadlineParams })
-    })
-  ]);
-
-  const priceRows = Array.isArray(priceData) ? priceData : (priceData.retorno || priceData.precos || priceData.dados || []);
-  const deadlineRows = Array.isArray(deadlineData) ? deadlineData : (deadlineData.retorno || deadlineData.prazos || deadlineData.dados || []);
-
-  return CORREIOS_SERVICES.map((service) => {
-    const priceRow = priceRows.find((row) => row.coProduto === service.code || row.nuRequisicao === service.method) || {};
-    const deadlineRow = deadlineRows.find((row) => row.coProduto === service.code || row.nuRequisicao === service.method) || {};
-    const price = extractPrice(priceRow);
-    const deadline = extractDeadline(deadlineRow);
-
-    if (price === null) {
-      return null;
-    }
-
-    return {
-      method: service.method,
-      label: service.label,
-      amount: Number(price.toFixed(2)),
-      deadline: deadline ? deadline + " dias uteis" : "prazo informado pelos Correios",
-      description: "Cotacao oficial dos Correios para postagem a partir do Pan-Americano, Jaragua-SP.",
-      source: "correios-api"
-    };
-  }).filter(Boolean);
-}
-
-function readRequestBody(request) {
-  return new Promise((resolve, reject) => {
-    let body = "";
-    request.on("data", (chunk) => {
-      body += chunk;
-      if (body.length > 100000) {
-        reject(new Error("Requisicao muito grande."));
-        request.destroy();
-      }
-    });
-    request.on("end", () => {
-      try {
-        resolve(body ? JSON.parse(body) : {});
-      } catch (error) {
-        reject(new Error("JSON invalido."));
-      }
-    });
-    request.on("error", reject);
-  });
-}
-
-function sendJson(response, statusCode, payload) {
-  response.writeHead(statusCode, {
-    "Content-Type": "application/json; charset=utf-8",
-    "Cache-Control": "no-store",
-    "Access-Control-Allow-Origin": "*"
-  });
-  response.end(JSON.stringify(payload));
-}
-
-function hasMercadoPagoCredentials() {
-  const token = String(process.env.MERCADOPAGO_ACCESS_TOKEN || "");
-  return Boolean(token && !token.includes("seu_access_token"));
-}
-
-function hasAdminCredentials() {
-  return Boolean(process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD && process.env.AUTH_SECRET);
-}
-
-function safeEquals(left, right) {
-  const a = Buffer.from(String(left || ""));
-  const b = Buffer.from(String(right || ""));
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
-}
-
-function createAdminToken(email) {
-  const payload = Buffer.from(JSON.stringify({ email, role: "admin", exp: Date.now() + 8 * 60 * 60 * 1000 })).toString("base64url");
-  const signature = crypto.createHmac("sha256", process.env.AUTH_SECRET).update(payload).digest("base64url");
-  return payload + "." + signature;
-}
-
-function verifyAdminToken(token) {
-  const parts = String(token || "").split(".");
-  if (parts.length !== 2) return null;
-  const expected = crypto.createHmac("sha256", process.env.AUTH_SECRET || "").update(parts[0]).digest("base64url");
-  if (!safeEquals(parts[1], expected)) return null;
-  try {
-    const payload = JSON.parse(Buffer.from(parts[0], "base64url").toString("utf8"));
-    if (payload.role !== "admin" || payload.exp < Date.now() || String(payload.email).toLowerCase() !== String(process.env.ADMIN_EMAIL).toLowerCase()) return null;
-    return payload;
-  } catch (error) {
-    return null;
-  }
-}
-
-async function handleAdminLogin(request, response) {
-  try {
-    if (!hasAdminCredentials()) {
-      sendJson(response, 503, { ok: false, message: "Acesso administrativo ainda nao foi configurado." });
-      return;
-    }
-    const payload = await readRequestBody(request);
-    if (!safeEquals(String(payload.email || "").toLowerCase(), String(process.env.ADMIN_EMAIL).toLowerCase()) || !safeEquals(payload.password, process.env.ADMIN_PASSWORD)) {
-      sendJson(response, 401, { ok: false, message: "Email ou senha invalidos." });
-      return;
-    }
-    const email = String(process.env.ADMIN_EMAIL).toLowerCase();
-    sendJson(response, 200, { ok: true, user: { name: "Administrador", email, role: "admin", adminToken: createAdminToken(email) } });
-  } catch (error) {
-    sendJson(response, 400, { ok: false, message: "Dados de login invalidos." });
-  }
-}
-
-async function handleAdminSessionVerification(request, response) {
-  try {
-    if (!hasAdminCredentials()) {
-      sendJson(response, 503, { ok: false });
-      return;
-    }
-    const payload = await readRequestBody(request);
-    const session = verifyAdminToken(payload.token);
-    if (!session) {
-      sendJson(response, 401, { ok: false });
-      return;
-    }
-    sendJson(response, 200, { ok: true, user: { name: "Administrador", email: session.email, role: "admin" } });
-  } catch (error) {
-    sendJson(response, 400, { ok: false });
-  }
-}
-
-function validHttpUrl(value) {
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" || url.protocol === "http:" ? url : null;
-  } catch (error) {
-    return null;
-  }
-}
-
-function createExternalReference() {
-  return "jsmp-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
-}
-
-async function createMercadoPagoCheckout(request, response) {
-  try {
-    if (!hasMercadoPagoCredentials()) {
-      sendJson(response, 503, { ok: false, message: "Configure o MERCADOPAGO_ACCESS_TOKEN no arquivo .env." });
-      return;
-    }
-
-    const payload = await readRequestBody(request);
-    const items = Array.isArray(payload.items) ? payload.items : [];
-    if (!items.length) {
-      sendJson(response, 400, { ok: false, message: "O carrinho esta vazio." });
-      return;
-    }
-
-    const checkoutItems = items.map((item) => {
-      const quantity = Math.max(1, Math.floor(Number(item.quantity) || 0));
-      const unitPrice = Number(item.price);
-      if (!item.name || !Number.isFinite(unitPrice) || unitPrice <= 0) {
-        throw new Error("Um item do pedido e invalido.");
-      }
-      return { id: String(item.productId || item.id || item.name), title: String(item.name).slice(0, 256), quantity, currency_id: "BRL", unit_price: Number(unitPrice.toFixed(2)) };
-    });
-
-    const shipping = Number(payload.shipping || 0);
-    if (Number.isFinite(shipping) && shipping > 0) {
-      checkoutItems.push({ id: "frete", title: "Frete - " + String(payload.shippingLabel || "Entrega").slice(0, 120), quantity: 1, currency_id: "BRL", unit_price: Number(shipping.toFixed(2)) });
-    }
-
-    const externalReference = createExternalReference();
-    const preference = {
-      items: checkoutItems,
-      external_reference: externalReference,
-      statement_descriptor: "JS MULTIMARCAS",
-      payment_methods: { excluded_payment_types: [{ id: "ticket" }] }
-    };
-    const payerEmail = String(payload.customerEmail || "").trim();
-    if (payerEmail) {
-      preference.payer = { email: payerEmail };
-    }
-
-    const siteUrl = validHttpUrl(process.env.MERCADOPAGO_SITE_URL || payload.siteUrl);
-    if (siteUrl && siteUrl.hostname !== "localhost" && siteUrl.hostname !== "127.0.0.1") {
-      const returnUrl = new URL("pagamento.html", siteUrl.href.endsWith("/") ? siteUrl.href : siteUrl.href + "/").href;
-      preference.back_urls = { success: returnUrl, pending: returnUrl, failure: returnUrl };
-      preference.auto_return = "approved";
-    }
-    const webhookUrl = validHttpUrl(process.env.MERCADOPAGO_WEBHOOK_URL);
-    if (webhookUrl && webhookUrl.protocol === "https:") {
-      preference.notification_url = webhookUrl.href;
-    }
-
-    const data = await requestJson("https://api.mercadopago.com/checkout/preferences", {
-      method: "POST",
-      headers: { "Authorization": "Bearer " + process.env.MERCADOPAGO_ACCESS_TOKEN, "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify(preference)
-    });
-    sendJson(response, 201, { ok: true, preferenceId: data.id, externalReference, checkoutUrl: data.sandbox_init_point || data.init_point });
-  } catch (error) {
-    sendJson(response, 502, { ok: false, message: error.message || "Nao foi possivel criar o checkout do Mercado Pago." });
-  }
-}
-
-async function getMercadoPagoPaymentStatus(request, response) {
-  try {
-    if (!hasMercadoPagoCredentials()) {
-      sendJson(response, 503, { ok: false, message: "Configure o MERCADOPAGO_ACCESS_TOKEN no arquivo .env." });
-      return;
-    }
-    const url = new URL(request.url, "http://localhost");
-    const paymentId = String(url.searchParams.get("payment_id") || "").replace(/\D/g, "");
-    if (!paymentId) {
-      sendJson(response, 400, { ok: false, message: "payment_id invalido." });
-      return;
-    }
-    const data = await requestJson("https://api.mercadopago.com/v1/payments/" + paymentId, {
-      headers: { "Authorization": "Bearer " + process.env.MERCADOPAGO_ACCESS_TOKEN, "Accept": "application/json" }
-    });
-    sendJson(response, 200, { ok: true, id: data.id, status: data.status, externalReference: data.external_reference, paymentMethod: data.payment_method_id || "mercado-pago", paymentType: data.payment_type_id || "" });
-  } catch (error) {
-    sendJson(response, 502, { ok: false, message: error.message || "Nao foi possivel consultar o pagamento." });
-  }
-}
-
-async function handleMercadoPagoWebhook(request, response) {
-  try {
-    const payload = await readRequestBody(request);
-    console.log("Webhook Mercado Pago recebido:", JSON.stringify(payload));
-    sendJson(response, 200, { ok: true });
-  } catch (error) {
-    sendJson(response, 400, { ok: false, message: "Webhook invalido." });
-  }
-}
-
-function buildCheckoutItems(items, shipping, shippingLabel) {
-  const checkoutItems = (Array.isArray(items) ? items : []).map((item) => {
-    const quantity = Math.max(1, Math.floor(Number(item.quantity) || 0));
-    const unitPrice = Number(item.price);
-    if (!item.name || !Number.isFinite(unitPrice) || unitPrice <= 0) {
-      throw new Error("Um item do pedido e invalido.");
-    }
-    return { id: String(item.productId || item.id || item.name), title: String(item.name).slice(0, 256), quantity, currency_id: "BRL", unit_price: Number(unitPrice.toFixed(2)) };
-  });
-  if (!checkoutItems.length) {
-    throw new Error("O carrinho esta vazio.");
-  }
-  if (Number.isFinite(Number(shipping)) && Number(shipping) > 0) {
-    checkoutItems.push({ id: "frete", title: "Frete - " + String(shippingLabel || "Entrega").slice(0, 120), quantity: 1, currency_id: "BRL", unit_price: Number(Number(shipping).toFixed(2)) });
-  }
-  return checkoutItems;
-}
-
-function getCheckoutTotal(items, shipping) {
-  return Number((items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0) + 0).toFixed(2));
-}
-
-function getMercadoPagoWebhookUrl() {
-  const webhookUrl = validHttpUrl(process.env.MERCADOPAGO_WEBHOOK_URL);
-  return webhookUrl && webhookUrl.protocol === "https:" ? webhookUrl.href : undefined;
-}
-
-function handleMercadoPagoConfig(request, response) {
-  const publicKey = String(process.env.MERCADOPAGO_PUBLIC_KEY || "");
-  if (!publicKey || publicKey.includes("sua_chave_publica")) {
-    sendJson(response, 503, { ok: false, message: "Configure o MERCADOPAGO_PUBLIC_KEY no Render." });
-    return;
-  }
-  sendJson(response, 200, { ok: true, publicKey });
-}
-
-async function processMercadoPagoBrickPayment(request, response) {
-  try {
-    if (!hasMercadoPagoCredentials()) {
-      sendJson(response, 503, { ok: false, message: "Configure o MERCADOPAGO_ACCESS_TOKEN no Render." });
-      return;
-    }
-    const payload = await readRequestBody(request);
-    const formData = payload.formData || {};
-    const order = payload.order || {};
-    const items = buildCheckoutItems(order.items, order.shipping, order.shippingLabel);
-    const transactionAmount = getCheckoutTotal(items, 0);
-    const payer = formData.payer || {};
-    const payerEmail = String(payer.email || formData.payer_email || order.customerEmail || "").trim();
-    const paymentMethod = String(formData.payment_method_id || "").trim();
-    if (!payerEmail || !paymentMethod) {
-      sendJson(response, 400, { ok: false, message: "Informe o email e o meio de pagamento." });
-      return;
-    }
-
-    const payment = {
-      transaction_amount: transactionAmount,
-      description: "Pedido JS Multimarcas Premium",
-      payment_method_id: paymentMethod,
-      external_reference: createExternalReference(),
-      payer: { email: payerEmail }
-    };
-    if (formData.token) payment.token = String(formData.token);
-    if (formData.installments) payment.installments = Number(formData.installments);
-    if (formData.issuer_id) payment.issuer_id = String(formData.issuer_id);
-    if (payer.identification && payer.identification.type && payer.identification.number) {
-      payment.payer.identification = { type: String(payer.identification.type), number: String(payer.identification.number) };
-    }
-    const webhookUrl = getMercadoPagoWebhookUrl();
-    if (webhookUrl) payment.notification_url = webhookUrl;
-
-    const data = await requestJson("https://api.mercadopago.com/v1/payments", {
-      method: "POST",
-      headers: {
-        "Authorization": "Bearer " + process.env.MERCADOPAGO_ACCESS_TOKEN,
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "X-Idempotency-Key": crypto.randomUUID()
-      },
-      body: JSON.stringify(payment)
-    });
-    const transactionData = data.point_of_interaction && data.point_of_interaction.transaction_data;
-    sendJson(response, 201, {
-      ok: true,
-      id: data.id,
-      status: data.status,
-      statusDetail: data.status_detail,
-      paymentType: data.payment_type_id || "",
-      paymentMethod: data.payment_method_id || paymentMethod,
-      pix: transactionData ? { qrCodeBase64: transactionData.qr_code_base64, qrCode: transactionData.qr_code, ticketUrl: transactionData.ticket_url } : null
-    });
-  } catch (error) {
-    sendJson(response, 502, { ok: false, message: error.message || "Nao foi possivel processar o pagamento." });
-  }
-}
-
-async function handleShippingQuote(request, response) {
-  try {
-    const payload = await readRequestBody(request);
-    if (normalizeCep(payload.cep).length !== 8) {
-      sendJson(response, 400, { ok: false, message: "CEP invalido." });
-      return;
-    }
-
-    const options = await quoteCorreios(payload);
-    sendJson(response, 200, {
-      ok: true,
-      provider: "correios",
-      cep: normalizeCep(payload.cep),
-      options
-    });
-  } catch (error) {
-    sendJson(response, 503, {
-      ok: false,
-      provider: "correios",
-      message: error.message || "Nao foi possivel consultar os Correios."
-    });
-  }
-}
+// Somente estas pastas/arquivos do repositorio sao publicos.
+const PUBLIC_DIRS = new Set(["", "admin", "assets", "css", "js"]);
 
 function serveStatic(request, response) {
-  const url = new URL(request.url, "http://localhost");
-  const cleanPath = decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname);
-  const filePath = path.resolve(ROOT_DIR, "." + cleanPath);
-
-  if (!filePath.startsWith(ROOT_DIR) || filePath.includes(path.sep + "api" + path.sep)) {
-    response.writeHead(404);
-    response.end("Not found");
+  let pathname;
+  try {
+    pathname = decodeURIComponent(new URL(request.url, "http://localhost").pathname);
+  } catch (error) {
+    response.writeHead(400);
+    response.end("Bad request");
     return;
+  }
+  // Espelha o caminho do GitHub Pages (/loja-multimarcas/...) para testes locais.
+  if (pathname === "/loja-multimarcas") pathname = "/";
+  if (pathname.startsWith("/loja-multimarcas/")) pathname = pathname.slice("/loja-multimarcas".length);
+  if (pathname.endsWith("/")) pathname += "index.html";
+
+  const segments = pathname.split("/").filter(Boolean);
+  const dir = segments.slice(0, -1).join("/");
+  const ext = path.extname(pathname).toLowerCase();
+  const hidden = segments.some((segment) => segment.startsWith("."));
+  const filePath = path.resolve(ROOT_DIR, "." + pathname);
+
+  if (hidden || !PUBLIC_DIRS.has(dir) || !MIME_TYPES[ext] || !filePath.startsWith(ROOT_DIR + path.sep) || ext === ".json") {
+    return sendNotFound(response);
   }
 
   fs.readFile(filePath, (error, content) => {
-    if (error) {
-      response.writeHead(404);
-      response.end("Not found");
-      return;
-    }
-
+    if (error) return sendNotFound(response);
     response.writeHead(200, {
-      "Content-Type": MIME_TYPES[path.extname(filePath)] || "application/octet-stream"
+      "Content-Type": MIME_TYPES[ext],
+      "Cache-Control": ext === ".html" ? "no-cache" : "public, max-age=3600"
     });
-    response.end(content);
+    response.end(request.method === "HEAD" ? undefined : content);
   });
 }
 
-const server = http.createServer((request, response) => {
+function sendNotFound(response) {
+  fs.readFile(path.join(ROOT_DIR, "404.html"), (error, content) => {
+    response.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
+    response.end(error ? "Página não encontrada" : content);
+  });
+}
+
+async function handle(request, response) {
+  applySecurityHeaders(response);
+  applyCors(request, response);
+
   if (request.method === "OPTIONS") {
-    response.writeHead(204, { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type" });
+    response.writeHead(204);
     response.end();
     return;
   }
 
-  if (request.method === "POST" && request.url === "/api/payments/checkout") {
-    createMercadoPagoCheckout(request, response);
-    return;
-  }
-  if (request.method === "POST" && request.url === "/api/auth/admin/login") {
-    handleAdminLogin(request, response);
-    return;
-  }
-  if (request.method === "POST" && request.url === "/api/auth/admin/verify") {
-    handleAdminSessionVerification(request, response);
-    return;
-  }
-  if (request.method === "GET" && request.url === "/api/payments/config") {
-    handleMercadoPagoConfig(request, response);
-    return;
-  }
-  if (request.method === "POST" && request.url === "/api/payments/process") {
-    processMercadoPagoBrickPayment(request, response);
-    return;
-  }
-  if (request.method === "GET" && request.url.startsWith("/api/payments/status")) {
-    getMercadoPagoPaymentStatus(request, response);
-    return;
-  }
-  if (request.method === "POST" && request.url === "/api/payments/webhook") {
-    handleMercadoPagoWebhook(request, response);
+  const pathname = new URL(request.url, "http://localhost").pathname;
+  if (pathname.startsWith("/api/")) {
+    const match = matchRoute(request.method, pathname);
+    if (!match) throw new HttpError(404, "Rota não encontrada.");
+    if (match.methodNotAllowed) throw new HttpError(405, "Método não permitido.");
+    await match.handler(request, response, match.params);
     return;
   }
 
-  if (request.method === "POST" && request.url === "/api/shipping/quote") {
-    handleShippingQuote(request, response);
-    return;
-  }
-
-  if (request.method === "GET") {
+  if (request.method === "GET" || request.method === "HEAD") {
     serveStatic(request, response);
     return;
   }
+  throw new HttpError(405, "Método não permitido.");
+}
 
-  response.writeHead(405);
-  response.end("Method not allowed");
-});
+function createServer() {
+  return http.createServer((request, response) => {
+    handle(request, response).catch((error) => {
+      if (error instanceof HttpError) {
+        sendJson(response, error.status, { ok: false, message: error.message, ...(error.extra || {}) });
+        return;
+      }
+      console.error("[erro]", request.method, request.url, error);
+      sendJson(response, 500, { ok: false, message: "Erro interno. Tente novamente em instantes." });
+    });
+  });
+}
 
-server.listen(PORT, () => {
-  console.log("JS Multimarcas Premium em http://localhost:" + PORT);
-});
+async function start() {
+  const db = await initDb();
+  if (db.kind !== "postgres" && (process.env.RENDER || process.env.NODE_ENV === "production")) {
+    console.warn("[db] ATENCAO: DATABASE_URL não configurado. Os dados ficam em disco local e serao perdidos a cada deploy/reinicio.");
+  }
+  const port = Number(process.env.PORT || 3000);
+  const server = createServer();
+  server.listen(port, () => {
+    console.log("JS Multimarcas Premium em http://localhost:" + port + " (banco: " + db.kind + ")");
+  });
+
+  const shutdown = () => {
+    server.close(() => closeDb().finally(() => process.exit(0)));
+    setTimeout(() => process.exit(0), 5000).unref();
+  };
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
+}
+
+if (require.main === module) {
+  start().catch((error) => {
+    console.error("Falha ao iniciar o servidor:", error);
+    process.exit(1);
+  });
+}
+
+module.exports = { createServer };

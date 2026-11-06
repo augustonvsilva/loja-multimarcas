@@ -1,122 +1,124 @@
-// Inicializa a aplicacao e atualiza elementos globais da interface.
+// Elementos globais: dados da loja, cabecalho, menu de conta, rodape, avisos e frete.
+
+// Dados institucionais exibidos no site. Atualize aqui (um unico lugar).
+window.JSMP_STORE = {
+  name: "JS Multimarcas Premium",
+  email: "contato@jsmultimarcas.com",
+  phone: "(11) 99999-0000",
+  whatsapp: "5511999990000",
+  address: "Rua Jacinto Pereira, 151 - Pan-Americano, Jaraguá - São Paulo/SP",
+  cep: "02992-130",
+  cnpj: "",
+  hours: "Seg a sab, 10h as 19h"
+};
+
+var escapeHtml = window.JSMP.escapeHtml;
+var formatCurrency = window.JSMP.formatCurrency;
+
 document.addEventListener("DOMContentLoaded", function () {
-  window.JSMP.seedData();
   setupHeader();
+  fillStoreInfo();
   updateFooterYear();
+  addWhatsappButton();
 });
-
-var SHIPPING_STORAGE_KEY = "jsmp_cart_shipping";
-var STORE_REGION_LABEL = "Pan-Americano, Jaragua-SP";
-
-function getApiBaseUrl() {
-  if (window.JSMP_API_BASE_URL) {
-    return window.JSMP_API_BASE_URL;
-  }
-  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-    return window.location.origin;
-  }
-  return "https://loja-multimarcas.onrender.com";
-}
-
-function getApiUrl(path) {
-  return getApiBaseUrl().replace(/\/$/, "") + path;
-}
 
 function getBasePath() {
   return document.body.getAttribute("data-base-path") || "./";
 }
 
-function formatCurrency(value) {
-  return value.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL"
-  });
-}
-
 function setupHeader() {
-  var session = window.JSMP.getSession();
+  var user = window.JSMP.getUser();
   var statusNode = document.querySelector("[data-user-status]");
   var cartCountNode = document.querySelector("[data-cart-count]");
-  var logoutButtons = document.querySelectorAll("[data-logout]");
   var currentPage = document.body.getAttribute("data-page");
 
   document.querySelectorAll(".main-nav a[data-page-link]").forEach(function (link) {
-    if (link.getAttribute("data-page-link") === currentPage) {
-      link.classList.add("active");
-    }
+    link.classList.toggle("active", link.getAttribute("data-page-link") === currentPage);
   });
 
-  if (statusNode) {
-    statusNode.textContent = session ? "Ola, " + session.name.split(" ")[0] : "Entrar";
-    statusNode.setAttribute("href", session ? getBasePath() + "admin/produtos.html" : getBasePath() + "login.html");
-
-    if (session && session.role !== "admin") {
-      statusNode.setAttribute("href", getBasePath() + "produtos.html");
-    }
-
-    if (session) {
-      setupAccountMenu(statusNode, session);
-    }
-  }
-
   if (cartCountNode) {
-    var items = window.JSMP.getCart().reduce(function (total, item) {
-      return total + item.quantity;
-    }, 0);
-    cartCountNode.textContent = "Carrinho (" + items + ")";
+    cartCountNode.textContent = "Carrinho (" + window.JSMP.cartCount() + ")";
   }
 
-  logoutButtons.forEach(function (button) {
-    button.addEventListener("click", function () {
-      window.JSMP.logout();
-      window.location.href = getBasePath() + "login.html";
-    });
+  if (statusNode && user && !statusNode.parentElement.classList.contains("account-menu")) {
+    statusNode.textContent = "Olá, " + String(user.name || "").split(" ")[0];
+    setupAccountMenu(statusNode, user);
+  }
+
+  document.querySelectorAll("[data-logout]").forEach(function (button) {
+    if (button.dataset.bound) return;
+    button.dataset.bound = "1";
+    button.addEventListener("click", logoutAndRedirect);
   });
 }
 
-function setupAccountMenu(statusNode, session) {
-  if (statusNode.parentElement.classList.contains("account-menu")) {
-    return;
-  }
+function logoutAndRedirect() {
+  window.JSMP.clearSession();
+  window.location.href = getBasePath() + "login.html";
+}
 
+function setupAccountMenu(statusNode, user) {
+  var base = getBasePath();
   var wrapper = document.createElement("div");
   wrapper.className = "account-menu";
   statusNode.parentNode.insertBefore(wrapper, statusNode);
   wrapper.appendChild(statusNode);
-  statusNode.setAttribute("href", getBasePath() + "conta.html");
+  statusNode.setAttribute("href", user.role === "admin" ? base + "admin/pedidos.html" : base + "conta.html");
   statusNode.setAttribute("aria-haspopup", "true");
 
   var menu = document.createElement("div");
   menu.className = "account-dropdown";
-  var adminLinks = session.role === "admin"
-    ? '<div class="account-dropdown-divider"></div><a class="account-admin-link" href="' + getBasePath() + 'admin/produtos.html">Gestao de produtos</a><a class="account-admin-link" href="' + getBasePath() + 'admin/pedidos.html">Pedidos</a><a class="account-admin-link" href="' + getBasePath() + 'admin/faturamento.html">Faturamento</a>'
-    : "";
+  var links = user.role === "admin"
+    ? '<a href="' + base + 'admin/pedidos.html">Pedidos</a><a href="' + base + 'admin/produtos.html">Gestão de produtos</a><a href="' + base + 'admin/faturamento.html">Faturamento</a>'
+    : '<a href="' + base + 'conta.html">Minha conta</a><a href="' + base + 'conta.html#pedidos">Meus pedidos</a>';
   menu.innerHTML = [
     '<div class="account-dropdown-header">',
-    '<strong>' + escapeHeaderText(session.name) + '</strong>',
-    '<span>' + escapeHeaderText(session.email) + '</span>',
+    "<strong>" + escapeHtml(user.name) + "</strong>",
+    "<span>" + escapeHtml(user.email) + "</span>",
     "</div>",
-    '<a href="' + getBasePath() + 'conta.html">Minha conta</a>',
-    '<a href="' + getBasePath() + 'conta.html#pedidos">Meus pedidos</a>',
-    adminLinks,
+    links,
+    '<div class="account-dropdown-divider"></div>',
     '<button type="button" data-account-logout>Sair da conta</button>'
   ].join("");
   wrapper.appendChild(menu);
-
-  menu.querySelector("[data-account-logout]").addEventListener("click", function () {
-    window.JSMP.logout();
-    window.location.href = getBasePath() + "login.html";
-  });
+  menu.querySelector("[data-account-logout]").addEventListener("click", logoutAndRedirect);
 
   document.querySelectorAll(".main-nav > [data-logout]").forEach(function (button) {
     button.remove();
   });
 }
 
-function escapeHeaderText(value) {
-  return String(value || "").replace(/[&<>\"']/g, function (character) {
-    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[character];
+function fillStoreInfo() {
+  var store = window.JSMP_STORE;
+  document.querySelectorAll("[data-store]").forEach(function (node) {
+    var key = node.getAttribute("data-store");
+    var value = store[key];
+    if (!value) {
+      if (node.hasAttribute("data-store-optional")) node.remove();
+      return;
+    }
+    if (key === "whatsapp") {
+      node.setAttribute("href", "https://wa.me/" + value);
+    } else if (key === "email") {
+      node.textContent = value;
+      if (node.tagName === "A") node.setAttribute("href", "mailto:" + value);
+    } else {
+      node.textContent = (node.getAttribute("data-store-prefix") || "") + value;
+    }
   });
+}
+
+function addWhatsappButton() {
+  var number = window.JSMP_STORE.whatsapp;
+  if (!number || document.body.getAttribute("data-page") === "admin") return;
+  var link = document.createElement("a");
+  link.className = "whatsapp-float";
+  link.href = "https://wa.me/" + number + "?text=" + encodeURIComponent("Olá! Vim pelo site da JS Multimarcas.");
+  link.target = "_blank";
+  link.rel = "noopener";
+  link.setAttribute("aria-label", "Falar no WhatsApp");
+  link.innerHTML = '<svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><path fill="currentColor" d="M16 3C9 3 3.3 8.6 3.3 15.6c0 2.2.6 4.4 1.7 6.3L3 29l7.3-1.9c1.8 1 3.8 1.5 5.8 1.5 7 0 12.7-5.6 12.7-12.6S23 3 16 3zm0 23.1c-1.8 0-3.6-.5-5.2-1.4l-.4-.2-4.3 1.1 1.2-4.2-.3-.4a10.4 10.4 0 0 1-1.6-5.4C5.4 9.8 10.1 5.2 16 5.2s10.6 4.6 10.6 10.4S21.9 26.1 16 26.1zm5.8-7.8c-.3-.2-1.9-.9-2.2-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-1 1.2-.2.2-.4.2-.7.1-.3-.2-1.4-.5-2.6-1.6-1-.9-1.6-1.9-1.8-2.2-.2-.3 0-.5.1-.7l.5-.6c.2-.2.2-.3.3-.6.1-.2 0-.4 0-.6l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.1-1.2 2.8s1.2 3.2 1.4 3.5c.2.2 2.4 3.6 5.8 5 .8.4 1.4.6 1.9.7.8.3 1.5.2 2.1.1.6-.1 1.9-.8 2.2-1.5.3-.7.3-1.4.2-1.5-.1-.2-.3-.3-.6-.4z"/></svg>';
+  document.body.appendChild(link);
 }
 
 function updateFooterYear() {
@@ -125,195 +127,61 @@ function updateFooterYear() {
   });
 }
 
+// Aviso flutuante discreto (substitui alert()).
+function showToast(message, tone) {
+  var toast = document.createElement("div");
+  toast.className = "toast" + (tone ? " " + tone : "");
+  toast.setAttribute("role", "status");
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  requestAnimationFrame(function () { toast.classList.add("visible"); });
+  setTimeout(function () {
+    toast.classList.remove("visible");
+    setTimeout(function () { toast.remove(); }, 300);
+  }, 3200);
+}
+
+function loadingMarkup(text) {
+  return '<div class="empty-state loading-state"><span class="spinner" aria-hidden="true"></span>' + escapeHtml(text || "Carregando...") + "</div>";
+}
+
+function errorMarkup(error) {
+  return '<div class="empty-state">' + escapeHtml(error && error.message ? error.message : "Não foi possível carregar agora.") + ' <button class="btn-ghost" type="button" onclick="window.location.reload()">Tentar novamente</button></div>';
+}
+
+// ---------- Frete ----------
+
 function normalizeCep(value) {
   return String(value || "").replace(/\D/g, "").slice(0, 8);
 }
 
 function formatCep(cep) {
-  var normalizedCep = normalizeCep(cep);
-  return normalizedCep.replace(/^(\d{5})(\d{3})$/, "$1-$2");
+  return normalizeCep(cep).replace(/^(\d{5})(\d{3})$/, "$1-$2");
 }
 
-function isSaoPauloCapitalCep(normalizedCep) {
-  var prefix = Number(normalizedCep.slice(0, 2));
-  return prefix >= 1 && prefix <= 5;
-}
-
-function isStoreRegionCep(normalizedCep) {
-  return ["026", "027", "028", "029", "051", "052"].indexOf(normalizedCep.slice(0, 3)) >= 0;
-}
-
-function createShippingOption(method, label, amount, deadline, description) {
-  return {
-    method: method,
-    label: label,
-    amount: Number(Math.max(amount, 0).toFixed(2)),
-    deadline: deadline,
-    description: description
-  };
-}
-
-function getShippingOptions(cep, subtotal, itemCount) {
-  var normalizedCep = normalizeCep(cep);
-  if (normalizedCep.length !== 8) {
-    return null;
-  }
-
-  var quantityExtra = Math.max((itemCount || 1) - 1, 0);
-  var discount = subtotal >= 700 ? 10 : subtotal >= 400 ? 5 : 0;
-  var options = [
-    createShippingOption(
-      "retirada",
-      "Retirada na loja",
-      0,
-      "no mesmo dia util",
-      "Retire seu pedido na loja da Rua Jacinto Pereira, 151 - " + STORE_REGION_LABEL + "."
-    )
-  ];
-
-  if (isStoreRegionCep(normalizedCep)) {
-    options.push(createShippingOption(
-      "entrega-local",
-      "Entrega local",
-      subtotal >= 500 ? 0 : 9.9 + quantityExtra * 2,
-      "em ate 1 dia util",
-      "Para Jaragua, Pan-Americano, Pirituba, Perus e bairros proximos."
-    ));
-  } else if (isSaoPauloCapitalCep(normalizedCep)) {
-    options.push(createShippingOption(
-      "motoboy-sp",
-      "Motoboy SP capital",
-      Math.max(14.9, 19.9 + quantityExtra * 2.5 - discount),
-      "em 1 a 2 dias uteis",
-      "Entrega por motoboy dentro da cidade de Sao Paulo."
-    ));
-  }
-
-  var regionFactor = Number(normalizedCep.charAt(0) || 0);
-  var pacAmount = 22.9 + regionFactor * 2.1 + quantityExtra * 3 - discount;
-  var sedexAmount = 34.9 + regionFactor * 2.8 + quantityExtra * 4 - discount;
-  options.push(createShippingOption(
-    "correios-pac",
-    "Correios PAC",
-    Math.max(19.9, pacAmount),
-    4 + (regionFactor % 6) + " a " + (7 + (regionFactor % 6)) + " dias uteis",
-    "Opcao economica para envio pelos Correios."
-  ));
-  options.push(createShippingOption(
-    "correios-sedex",
-    "Correios Sedex",
-    Math.max(29.9, sedexAmount),
-    2 + (regionFactor % 3) + " a " + (4 + (regionFactor % 3)) + " dias uteis",
-    "Opcao mais rapida para envio pelos Correios."
-  ));
-
-  return options;
-}
-
-function simulateShipping(cep, subtotal, itemCount, preferredMethod) {
-  var normalizedCep = normalizeCep(cep);
-  var options = getShippingOptions(cep, subtotal, itemCount);
-  if (!options) {
-    return null;
-  }
-
-  var selected = options.find(function (option) {
-    return option.method === preferredMethod;
-  }) || options.find(function (option) {
-    return option.method !== "retirada";
-  }) || options[0];
-
-  return {
-    cep: normalizedCep,
-    formattedCep: formatCep(normalizedCep),
-    method: selected.method,
-    label: selected.label,
-    amount: selected.amount,
-    deadline: selected.deadline,
-    description: selected.description,
-    options: options
-  };
-}
-
-function mergeShippingOptions(localOptions, correiosOptions) {
-  var remoteOptions = Array.isArray(correiosOptions) ? correiosOptions : [];
-  var remoteMethods = remoteOptions.map(function (option) {
-    return option.method;
+function maskCepInput(input) {
+  input.addEventListener("input", function () {
+    var digits = normalizeCep(input.value);
+    input.value = digits.length > 5 ? digits.slice(0, 5) + "-" + digits.slice(5) : digits;
   });
-
-  return localOptions
-    .filter(function (option) {
-      return remoteMethods.indexOf(option.method) === -1;
-    })
-    .concat(remoteOptions);
 }
 
-function quoteShipping(cep, subtotal, itemCount, preferredMethod) {
-  var fallback = simulateShipping(cep, subtotal, itemCount, preferredMethod);
-  if (!fallback) {
-    return Promise.resolve(null);
-  }
-
-  return fetch("/api/shipping/quote", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "application/json"
-    },
-    body: JSON.stringify({
-      cep: fallback.cep,
-      subtotal: Number(subtotal || 0),
-      itemCount: Number(itemCount || 1)
-    })
-  })
-    .then(function (response) {
-      if (!response.ok) {
-        throw new Error("API dos Correios indisponivel.");
-      }
-      return response.json();
-    })
-    .then(function (payload) {
-      if (!payload.ok || !payload.options || !payload.options.length) {
-        return fallback;
-      }
-
-      var options = mergeShippingOptions(fallback.options, payload.options);
-      var selected = options.find(function (option) {
-        return option.method === preferredMethod;
-      }) || options.find(function (option) {
-        return option.method !== "retirada";
-      }) || options[0];
-
-      return {
-        cep: fallback.cep,
-        formattedCep: fallback.formattedCep,
-        method: selected.method,
-        label: selected.label,
-        amount: selected.amount,
-        deadline: selected.deadline,
-        description: selected.description,
-        source: selected.source || "local",
-        options: options
-      };
-    })
-    .catch(function () {
-      return fallback;
-    });
+// Consulta o frete no servidor. Retorna null se o CEP for invalido.
+function quoteShipping(cep, payload) {
+  var normalized = normalizeCep(cep);
+  if (normalized.length !== 8) return Promise.resolve(null);
+  var body = Object.assign({ cep: normalized }, payload || {});
+  return window.JSMP.request("POST", "/api/shipping/quote", body, { auth: false }).then(function (data) {
+    return { cep: normalized, formattedCep: formatCep(normalized), options: data.options };
+  });
 }
 
-function saveCartShipping(shipping) {
-  localStorage.setItem(SHIPPING_STORAGE_KEY, JSON.stringify(shipping));
-}
-
-function getCartShipping() {
-  try {
-    var raw = localStorage.getItem(SHIPPING_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch (error) {
-    return null;
-  }
-}
-
-function clearCartShipping() {
-  localStorage.removeItem(SHIPPING_STORAGE_KEY);
+// Busca endereco pelo CEP (ViaCEP) para preencher o formulario.
+function lookupAddress(cep) {
+  var normalized = normalizeCep(cep);
+  if (normalized.length !== 8) return Promise.resolve(null);
+  return fetch("https://viacep.com.br/ws/" + normalized + "/json/")
+    .then(function (response) { return response.ok ? response.json() : null; })
+    .then(function (data) { return data && !data.erro ? data : null; })
+    .catch(function () { return null; });
 }
