@@ -1,39 +1,23 @@
 <!DOCTYPE html>
-<!-- Arquivo gerado por scripts/build-pages.js a partir de src/pages/produtos.html. Edite a fonte, nao este arquivo. -->
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Produtos | JS Multimarcas Premium</title>
-  <meta name="description" content="Catálogo completo JS Multimarcas Premium: jaquetas, polos, camisas, blazers, conjuntos e tênis Nike, Adidas, Lacoste, Armani e Hugo Boss.">
-  <meta name="theme-color" content="#050505">
-  <link rel="canonical" href="https://augustonvsilva.github.io/loja-multimarcas/produtos.html">
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="JS Multimarcas Premium">
-  <meta property="og:title" content="Produtos | JS Multimarcas Premium">
-  <meta property="og:description" content="Catálogo completo JS Multimarcas Premium: jaquetas, polos, camisas, blazers, conjuntos e tênis Nike, Adidas, Lacoste, Armani e Hugo Boss.">
-  <meta property="og:url" content="https://augustonvsilva.github.io/loja-multimarcas/produtos.html">
-  <meta property="og:image" content="https://augustonvsilva.github.io/loja-multimarcas/assets/og-image.png">
-  <meta property="og:locale" content="pt_BR">
-  <link rel="icon" type="image/png" href="./assets/favicon.png">
-  <link rel="apple-touch-icon" href="./assets/icon-192.png">
-  <link rel="manifest" href="./site.webmanifest">
-  <link rel="preconnect" href="https://loja-multimarcas.onrender.com" crossorigin>
-  <link rel="stylesheet" href="./css/style.css?v=5bfd8da7f5">
+  <title>JS Multimarcas Premium | Produtos</title>
+  <link rel="stylesheet" href="./css/style.css">
 </head>
-<body data-page="produtos" data-base-path="./">
-  <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+<body data-page="produtos">
   <header class="site-header">
     <div class="container header-bar">
       <a class="brand" href="./index.html">
-        <div class="brand-mark"><img src="./assets/logo-small.png" alt="" width="52" height="52"></div>
+        <div class="brand-mark"><img src="./assets/logo.png" alt="Logo JS Multimarcas Premium"></div>
         <div class="brand-copy">
           <strong>JS Multimarcas Premium</strong>
-          <span>Luxo urbano em preto e dourado</span>
+          <span>Catalogo completo</span>
         </div>
       </a>
-      <nav class="main-nav" aria-label="Principal">
-        <a href="./index.html" data-page-link="home">Início</a>
+      <nav class="main-nav">
+        <a href="./index.html" data-page-link="home">Home</a>
         <a href="./produtos.html" data-page-link="produtos">Produtos</a>
         <a href="./login.html" data-page-link="login" data-user-status>Entrar</a>
         <a class="nav-pill" href="./carrinho.html" data-page-link="carrinho" data-cart-count>Carrinho (0)</a>
@@ -41,12 +25,14 @@
     </div>
   </header>
 
-  <main id="conteudo" class="page-shell">
+  <main class="page-shell">
+    <!-- Cabecalho da pagina de catalogo -->
     <section class="page-hero">
       <div class="container">
         <div class="page-banner glass-panel reveal">
-          <span class="eyebrow">Catálogo</span>
-          <h1 class="page-title">Todos os produtos</h1>
+          <span class="eyebrow">Catalogo</span>
+          <h1 class="page-title">Todos os produtos premium em um unico lugar.</h1>
+          <p class="page-subtitle">Navegue pelas marcas ou explore o catalogo completo. Os produtos podem ser adicionados ao carrinho em qualquer pagina.</p>
           <div class="catalog-filter-stack">
             <div>
               <span class="eyebrow">Marcas</span>
@@ -58,16 +44,17 @@
             </div>
             <div class="catalog-tools">
               <div class="field">
-                <label for="catalog-search">Buscar</label>
-                <input class="input" id="catalog-search" type="search" placeholder="Ex: jaqueta, tênis, polo">
+                <label for="catalog-search">Buscar produto</label>
+                <input class="input" id="catalog-search" type="search" placeholder="Ex: jaqueta, tenis, blazer">
               </div>
               <div class="field">
                 <label for="catalog-sort">Ordenar por</label>
                 <select class="select" id="catalog-sort">
-                  <option value="featured">Destaques</option>
-                  <option value="price-asc">Menor preço</option>
-                  <option value="price-desc">Maior preço</option>
+                  <option value="featured">Destaques primeiro</option>
+                  <option value="price-asc">Menor preco</option>
+                  <option value="price-desc">Maior preco</option>
                   <option value="name-asc">Nome A-Z</option>
+                  <option value="stock-desc">Maior estoque</option>
                 </select>
               </div>
             </div>
@@ -78,48 +65,18 @@
 
     <section class="section">
       <div class="container">
-        <p id="catalog-count" class="muted-text" aria-live="polite"></p>
         <div class="product-grid" data-product-grid="all"></div>
       </div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <div class="container footer-grid">
-      <div>
-        <h4>JS Multimarcas Premium</h4>
-        <p class="muted-text">Multimarcas premium no Pan-Americano, Jaraguá - SP. Peças selecionadas de Nike, Adidas, Lacoste, Armani e Hugo Boss, com retirada na loja e entrega para todo o Brasil.</p>
-      </div>
-      <div>
-        <h4>Loja</h4>
-        <p><a href="./produtos.html">Todos os produtos</a></p>
-        <p><a href="./carrinho.html">Carrinho</a></p>
-        <p><a href="./conta.html">Minha conta</a></p>
-      </div>
-      <div>
-        <h4>Ajuda</h4>
-        <p><a href="./trocas-e-devolucoes.html">Trocas e devoluções</a></p>
-        <p><a href="./privacidade.html">Política de privacidade</a></p>
-        <p><a href="./termos.html">Termos de uso</a></p>
-        <p><a data-store="whatsapp" href="#" target="_blank" rel="noopener">Fale no WhatsApp</a></p>
-      </div>
-      <div>
-        <h4>Contato</h4>
-        <p><a data-store="email" href="#"></a></p>
-        <p class="muted-text" data-store="phone"></p>
-        <p class="muted-text" data-store="address"></p>
-        <p class="muted-text" data-store="hours"></p>
-      </div>
-    </div>
-    <div class="container footer-copy">
-      <span>© <span data-year></span> JS Multimarcas Premium.</span>
-      <span data-store="cnpj" data-store-prefix="CNPJ " data-store-optional></span>
-      <span>Pagamentos processados com segurança pelo Mercado Pago: PIX, débito e crédito.</span>
-    </div>
+    <div class="container footer-copy">© <span data-year></span> JS Multimarcas Premium.</div>
   </footer>
 
-  <script src="./js/storage.js?v=5bfd8da7f5"></script>
-  <script src="./js/app.js?v=5bfd8da7f5"></script>
-  <script src="./js/catalog.js?v=5bfd8da7f5"></script>
+  <script src="./js/storage.js"></script>
+  <script src="./js/app.js"></script>
+  <script src="./js/catalog.js"></script>
 </body>
 </html>
+

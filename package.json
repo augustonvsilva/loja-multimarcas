@@ -1,20 +1,12 @@
 {
   "name": "js-multimarcas-premium",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "Loja virtual JS Multimarcas Premium: site estatico + API Node com Postgres e Mercado Pago.",
   "type": "commonjs",
   "scripts": {
-    "start": "node api/server.js",
-    "dev": "node --watch api/server.js",
-    "test": "node --test test/",
-    "build": "node scripts/build-pages.js"
+    "start": "node api/server.js"
   },
   "engines": {
-    "node": ">=20"
-  },
-  "dependencies": {
-    "@electric-sql/pglite": "^0.5.15",
-    "pg": "^8.23.1"
+    "node": ">=18"
   }
 }

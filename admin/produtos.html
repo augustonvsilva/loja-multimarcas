@@ -1,54 +1,39 @@
 <!DOCTYPE html>
-<!-- Arquivo gerado por scripts/build-pages.js a partir de src/pages/admin/produtos.html. Edite a fonte, nao este arquivo. -->
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestão de produtos | JS Multimarcas Premium</title>
-  <meta name="description" content="Moda premium multimarcas: Nike, Adidas, Lacoste, Armani e Hugo Boss. Compre online com PIX ou cartão, retire na loja no Pan-Americano (Jaraguá-SP) ou receba em casa.">
-  <meta name="theme-color" content="#050505">
-  <meta name="robots" content="noindex, nofollow">
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="JS Multimarcas Premium">
-  <meta property="og:title" content="Gestão de produtos | JS Multimarcas Premium">
-  <meta property="og:description" content="Moda premium multimarcas: Nike, Adidas, Lacoste, Armani e Hugo Boss. Compre online com PIX ou cartão, retire na loja no Pan-Americano (Jaraguá-SP) ou receba em casa.">
-  <meta property="og:url" content="https://augustonvsilva.github.io/loja-multimarcas/admin/produtos.html">
-  <meta property="og:image" content="https://augustonvsilva.github.io/loja-multimarcas/assets/og-image.png">
-  <meta property="og:locale" content="pt_BR">
-  <link rel="icon" type="image/png" href="../assets/favicon.png">
-  <link rel="apple-touch-icon" href="../assets/icon-192.png">
-  <link rel="manifest" href="../site.webmanifest">
-  <link rel="preconnect" href="https://loja-multimarcas.onrender.com" crossorigin>
-  <link rel="stylesheet" href="../css/style.css?v=5bfd8da7f5">
+  <title>JS Multimarcas Premium | Admin Produtos</title>
+  <link rel="stylesheet" href="../css/style.css">
 </head>
-<body data-page="admin" data-base-path="../" data-admin-view="products">
-  <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+<body data-page="admin" data-admin-view="products" data-base-path="../">
   <header class="site-header">
     <div class="container header-bar">
       <a class="brand" href="../index.html">
-        <div class="brand-mark"><img src="../assets/logo-small.png" alt="" width="52" height="52"></div>
+        <div class="brand-mark"><img src="../assets/logo.png" alt="Logo JS Multimarcas Premium"></div>
         <div class="brand-copy">
           <strong>JS Multimarcas Premium</strong>
-          <span>Painel administrativo</span>
+          <span>Admin • Produtos</span>
         </div>
       </a>
-      <nav class="main-nav" aria-label="Principal">
-        <a href="../index.html" data-page-link="home">Início</a>
+      <nav class="main-nav">
+        <a href="../index.html" data-page-link="home">Home</a>
         <a href="../produtos.html" data-page-link="produtos">Produtos</a>
         <a href="../login.html" data-page-link="login" data-user-status>Entrar</a>
         <a class="nav-pill" href="../carrinho.html" data-page-link="carrinho" data-cart-count>Carrinho (0)</a>
+        <button class="btn-secondary" type="button" data-logout>Sair</button>
       </nav>
     </div>
   </header>
 
-  <main id="conteudo" class="page-shell">
+  <main class="page-shell">
     <section class="page-hero">
       <div class="container">
         <div class="page-banner glass-panel reveal">
           <span class="eyebrow">Admin</span>
-          <h1 class="page-title">Gestão de produtos</h1>
+          <h1 class="page-title">Gestao de produtos</h1>
+          <p class="page-subtitle">Cadastre, edite e organize o catalogo sem misturar isso com o faturamento.</p>
           <div class="admin-tabs">
-            <a class="admin-tab" href="./pedidos.html" data-admin-link="orders">Pedidos</a>
             <a class="admin-tab" href="./produtos.html" data-admin-link="products">Produtos</a>
             <a class="admin-tab" href="./faturamento.html" data-admin-link="billing">Faturamento</a>
           </div>
@@ -58,14 +43,11 @@
 
     <section class="section">
       <div class="container">
-        <div id="admin-gate" class="feedback error" hidden>Área restrita. <a href="../login.html?next=admin/produtos.html">Entre com a conta de administrador</a>.</div>
-        <div id="admin-panel" class="admin-layout" hidden>
-          <div class="admin-main-column">
+        <div id="admin-gate" class="feedback error" style="display: none;">Acesso restrito. Esta area administrativa nao fica visivel para clientes. Faça login com um usuario admin em <a href="../login.html">login.html</a>.</div>
+        <div id="admin-panel" class="admin-layout" style="display: none;">
+          <div class="admin-main-column" data-admin-view>
             <div class="admin-card">
-              <div class="table-row admin-toolbar">
-                <h2>Produtos cadastrados</h2>
-                <input id="admin-search" class="input" type="search" placeholder="Buscar produto" aria-label="Buscar produto">
-              </div>
+              <h2>Produtos cadastrados</h2>
               <div id="admin-products"></div>
             </div>
           </div>
@@ -73,12 +55,8 @@
           <div class="admin-side-column">
             <form id="admin-form" class="admin-card">
               <input type="hidden" name="productId">
-              <h2 id="admin-form-title">Cadastrar produto</h2>
+              <h2>Cadastrar ou editar produto</h2>
               <div class="form-grid">
-                <div class="field-full">
-                  <label for="name">Nome do produto</label>
-                  <input class="input" id="name" name="name" type="text" placeholder="Ex: Jaqueta Corta-vento Preta" required maxlength="120">
-                </div>
                 <div class="field">
                   <label for="brand">Marca</label>
                   <select class="select" id="brand" name="brand" required></select>
@@ -86,8 +64,8 @@
                 <div class="field">
                   <label for="new-brand-name">Nova marca</label>
                   <div class="inline-field">
-                    <input class="input" id="new-brand-name" type="text" placeholder="Ex: Reserva">
-                    <button class="btn-secondary" type="button" data-add-brand>+</button>
+                    <input class="input" id="new-brand-name" name="newBrandName" type="text" placeholder="Ex: Reserva">
+                    <button class="btn-secondary" type="button" data-add-brand>Adicionar</button>
                   </div>
                 </div>
                 <div class="field">
@@ -97,58 +75,61 @@
                 <div class="field">
                   <label for="new-category-name">Nova categoria</label>
                   <div class="inline-field">
-                    <input class="input" id="new-category-name" type="text" placeholder="Ex: Bermudas">
-                    <button class="btn-secondary" type="button" data-add-category>+</button>
+                    <input class="input" id="new-category-name" name="newCategoryName" type="text" placeholder="Ex: Bermudas">
+                    <button class="btn-secondary" type="button" data-add-category>Adicionar</button>
                   </div>
                 </div>
                 <div class="field">
-                  <label for="price">Preço de venda (R$)</label>
-                  <input class="input" id="price" name="price" type="number" min="0.01" step="0.01" required>
+                  <label for="name">Nome do produto</label>
+                  <input class="input" id="name" name="name" type="text" placeholder="Ex: Jaqueta Premium" required>
                 </div>
                 <div class="field">
-                  <label for="cost">Custo (R$, interno)</label>
-                  <input class="input" id="cost" name="cost" type="number" min="0" step="0.01">
+                  <label for="price">Preco</label>
+                  <input class="input" id="price" name="price" type="number" min="0" step="0.01" placeholder="399.90" required>
                 </div>
                 <div class="field">
-                  <label for="stock">Estoque (unidades)</label>
-                  <input class="input" id="stock" name="stock" type="number" min="0" step="1" required>
+                  <label for="cost">Custo interno</label>
+                  <input class="input" id="cost" name="cost" type="number" min="0" step="0.01" placeholder="200.00" required>
                 </div>
                 <div class="field">
-                  <label>Lucro por peça</label>
-                  <strong id="admin-profit-preview" class="finance-kpi">R$ 0,00</strong>
+                  <label for="stock">Estoque</label>
+                  <input class="input" id="stock" name="stock" type="number" min="0" step="1" placeholder="12" required>
+                </div>
+                <div class="field">
+                  <label for="image">Imagem (URL opcional)</label>
+                  <input class="input" id="image" name="image" type="text" placeholder="https://... ou deixe vazio">
                 </div>
                 <div class="field-full">
-                  <label for="images">Fotos (JPG, PNG ou WEBP, até 8)</label>
-                  <input class="input" id="images" name="images" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+                  <label for="images">Fotos do produto</label>
+                  <input class="input" id="images" name="images" type="file" accept="image/*" multiple>
+                  <p class="muted-text">Voce pode subir varias fotos direto do computador. Se enviar novas imagens, elas substituem as antigas.</p>
                   <div id="admin-image-preview" class="admin-image-preview"></div>
                 </div>
                 <div class="field-full">
-                  <label for="description">Descrição</label>
-                  <textarea class="input textarea" id="description" name="description" placeholder="Tecido, caimento, detalhes e diferenciais." maxlength="2000"></textarea>
+                  <label for="description">Descricao do produto</label>
+                  <textarea class="input textarea" id="description" name="description" placeholder="Descreva o produto, acabamento, estilo e diferenciais." required></textarea>
                 </div>
                 <div class="field-full">
-                  <label>Grade</label>
+                  <label>Variacoes do produto</label>
                   <div class="option-toggle-grid">
-                    <label class="tag option-toggle"><input type="checkbox" name="hasSizes"> Tamanhos (PP a XGG)</label>
-                    <label class="tag option-toggle"><input type="checkbox" name="hasNumbers"> Numeração (calçados)</label>
+                    <label class="tag option-toggle"><input type="checkbox" id="has-sizes" name="hasSizes"> Usa tamanhos</label>
+                    <label class="tag option-toggle"><input type="checkbox" id="has-numbers" name="hasNumbers"> Usa numeracao</label>
                   </div>
                 </div>
                 <div id="sizes-group" class="field-full admin-choice-group" hidden>
-                  <label>Tamanhos disponíveis</label>
-                  <div class="option-checklist">
+                  <label>Tamanhos disponiveis</label>
+                  <div class="option-checklist" data-option-group="sizes">
                     <label class="tag"><input type="checkbox" name="sizeOptions" value="PP"> PP</label>
                     <label class="tag"><input type="checkbox" name="sizeOptions" value="P"> P</label>
                     <label class="tag"><input type="checkbox" name="sizeOptions" value="M"> M</label>
                     <label class="tag"><input type="checkbox" name="sizeOptions" value="G"> G</label>
                     <label class="tag"><input type="checkbox" name="sizeOptions" value="GG"> GG</label>
                     <label class="tag"><input type="checkbox" name="sizeOptions" value="XG"> XG</label>
-                    <label class="tag"><input type="checkbox" name="sizeOptions" value="XGG"> XGG</label>
                   </div>
                 </div>
                 <div id="numbers-group" class="field-full admin-choice-group" hidden>
-                  <label>Numerações disponíveis</label>
-                  <div class="option-checklist">
-                    <label class="tag"><input type="checkbox" name="numberOptions" value="33"> 33</label>
+                  <label>Numeracoes disponiveis</label>
+                  <div class="option-checklist" data-option-group="numbers">
                     <label class="tag"><input type="checkbox" name="numberOptions" value="34"> 34</label>
                     <label class="tag"><input type="checkbox" name="numberOptions" value="35"> 35</label>
                     <label class="tag"><input type="checkbox" name="numberOptions" value="36"> 36</label>
@@ -161,19 +142,35 @@
                     <label class="tag"><input type="checkbox" name="numberOptions" value="43"> 43</label>
                     <label class="tag"><input type="checkbox" name="numberOptions" value="44"> 44</label>
                     <label class="tag"><input type="checkbox" name="numberOptions" value="45"> 45</label>
-                    <label class="tag"><input type="checkbox" name="numberOptions" value="46"> 46</label>
                   </div>
                 </div>
-                <div class="field-full option-toggle-grid">
-                  <label class="tag"><input type="checkbox" name="active" checked> Visível na loja</label>
-                  <label class="tag"><input type="checkbox" name="featured"> Destaque na home</label>
+                <div class="field-full">
+                  <label class="tag"><input type="checkbox" name="featured"> Marcar como destaque</label>
                 </div>
-                <div class="field-full button-row">
+                <div class="field-full">
+                  <div class="summary-card taxonomy-card">
+                    <div class="taxonomy-block">
+                      <span class="eyebrow">Marcas cadastradas</span>
+                      <div id="admin-brand-list" class="tag-list"></div>
+                    </div>
+                    <div class="taxonomy-block">
+                      <span class="eyebrow">Categorias cadastradas</span>
+                      <div id="admin-category-list" class="tag-list"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="field-full">
+                  <div class="summary-card admin-profit-card">
+                    <span class="eyebrow">Uso interno</span>
+                    <strong id="admin-profit-preview" class="finance-kpi">R$ 0,00</strong>
+                    <p class="muted-text">Lucro estimado calculado automaticamente: preco de venda menos custo.</p>
+                  </div>
+                </div>
+                <div class="field-full">
                   <button class="btn" type="submit">Salvar produto</button>
-                  <button class="btn-ghost" type="button" id="admin-form-reset">Limpar</button>
                 </div>
               </div>
-              <div id="admin-feedback" class="feedback" role="status"></div>
+              <div id="admin-feedback" class="feedback">Somente administradores conseguem acessar e editar esta area.</div>
             </form>
           </div>
         </div>
@@ -182,41 +179,12 @@
   </main>
 
   <footer class="site-footer">
-    <div class="container footer-grid">
-      <div>
-        <h4>JS Multimarcas Premium</h4>
-        <p class="muted-text">Multimarcas premium no Pan-Americano, Jaraguá - SP. Peças selecionadas de Nike, Adidas, Lacoste, Armani e Hugo Boss, com retirada na loja e entrega para todo o Brasil.</p>
-      </div>
-      <div>
-        <h4>Loja</h4>
-        <p><a href="../produtos.html">Todos os produtos</a></p>
-        <p><a href="../carrinho.html">Carrinho</a></p>
-        <p><a href="../conta.html">Minha conta</a></p>
-      </div>
-      <div>
-        <h4>Ajuda</h4>
-        <p><a href="../trocas-e-devolucoes.html">Trocas e devoluções</a></p>
-        <p><a href="../privacidade.html">Política de privacidade</a></p>
-        <p><a href="../termos.html">Termos de uso</a></p>
-        <p><a data-store="whatsapp" href="#" target="_blank" rel="noopener">Fale no WhatsApp</a></p>
-      </div>
-      <div>
-        <h4>Contato</h4>
-        <p><a data-store="email" href="#"></a></p>
-        <p class="muted-text" data-store="phone"></p>
-        <p class="muted-text" data-store="address"></p>
-        <p class="muted-text" data-store="hours"></p>
-      </div>
-    </div>
-    <div class="container footer-copy">
-      <span>© <span data-year></span> JS Multimarcas Premium.</span>
-      <span data-store="cnpj" data-store-prefix="CNPJ " data-store-optional></span>
-      <span>Pagamentos processados com segurança pelo Mercado Pago: PIX, débito e crédito.</span>
-    </div>
+    <div class="container footer-copy">© <span data-year></span> JS Multimarcas Premium.</div>
   </footer>
 
-  <script src="../js/storage.js?v=5bfd8da7f5"></script>
-  <script src="../js/app.js?v=5bfd8da7f5"></script>
-  <script src="../js/admin.js?v=5bfd8da7f5"></script>
+  <script src="../js/storage.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/admin.js"></script>
 </body>
 </html>
+

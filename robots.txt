@@ -1,6 +1,0 @@
-User-agent: *
-Disallow: /loja-multimarcas/admin/
-Disallow: /loja-multimarcas/carrinho.html
-Disallow: /loja-multimarcas/pagamento.html
-
-Sitemap: https://augustonvsilva.github.io/loja-multimarcas/sitemap.xml

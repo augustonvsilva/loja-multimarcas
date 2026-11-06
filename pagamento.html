@@ -1,39 +1,23 @@
 <!DOCTYPE html>
-<!-- Arquivo gerado por scripts/build-pages.js a partir de src/pages/pagamento.html. Edite a fonte, nao este arquivo. -->
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Finalizar compra | JS Multimarcas Premium</title>
-  <meta name="description" content="Moda premium multimarcas: Nike, Adidas, Lacoste, Armani e Hugo Boss. Compre online com PIX ou cartão, retire na loja no Pan-Americano (Jaraguá-SP) ou receba em casa.">
-  <meta name="theme-color" content="#050505">
-  <meta name="robots" content="noindex, nofollow">
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="JS Multimarcas Premium">
-  <meta property="og:title" content="Finalizar compra | JS Multimarcas Premium">
-  <meta property="og:description" content="Moda premium multimarcas: Nike, Adidas, Lacoste, Armani e Hugo Boss. Compre online com PIX ou cartão, retire na loja no Pan-Americano (Jaraguá-SP) ou receba em casa.">
-  <meta property="og:url" content="https://augustonvsilva.github.io/loja-multimarcas/pagamento.html">
-  <meta property="og:image" content="https://augustonvsilva.github.io/loja-multimarcas/assets/og-image.png">
-  <meta property="og:locale" content="pt_BR">
-  <link rel="icon" type="image/png" href="./assets/favicon.png">
-  <link rel="apple-touch-icon" href="./assets/icon-192.png">
-  <link rel="manifest" href="./site.webmanifest">
-  <link rel="preconnect" href="https://loja-multimarcas.onrender.com" crossorigin>
-  <link rel="stylesheet" href="./css/style.css?v=5bfd8da7f5">
+  <title>JS Multimarcas Premium | Pagamento</title>
+  <link rel="stylesheet" href="./css/style.css">
 </head>
-<body data-page="pagamento" data-base-path="./">
-  <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+<body data-page="pagamento">
   <header class="site-header">
     <div class="container header-bar">
       <a class="brand" href="./index.html">
-        <div class="brand-mark"><img src="./assets/logo-small.png" alt="" width="52" height="52"></div>
+        <div class="brand-mark"><img src="./assets/logo.png" alt="Logo JS Multimarcas Premium"></div>
         <div class="brand-copy">
           <strong>JS Multimarcas Premium</strong>
-          <span>Luxo urbano em preto e dourado</span>
+          <span>Pagamento</span>
         </div>
       </a>
-      <nav class="main-nav" aria-label="Principal">
-        <a href="./index.html" data-page-link="home">Início</a>
+      <nav class="main-nav">
+        <a href="./index.html" data-page-link="home">Home</a>
         <a href="./produtos.html" data-page-link="produtos">Produtos</a>
         <a href="./login.html" data-page-link="login" data-user-status>Entrar</a>
         <a class="nav-pill" href="./carrinho.html" data-page-link="carrinho" data-cart-count>Carrinho (0)</a>
@@ -41,81 +25,42 @@
     </div>
   </header>
 
-  <main id="conteudo" class="page-shell">
+  <main class="page-shell">
+    <!-- Formulario de pagamento com metodos simulados -->
     <section class="page-hero">
       <div class="container">
         <div class="page-banner glass-panel reveal">
           <span class="eyebrow">Checkout</span>
-          <h1 class="page-title">Finalizar compra</h1>
-          <p class="page-subtitle">Pagamento processado com segurança pelo Mercado Pago. Os dados do cartão não passam pela loja.</p>
+          <h1 class="page-title">Finalize sua compra premium.</h1>
+          <p class="page-subtitle">Escolha cartao de credito, debito ou PIX. O fluxo abaixo faz uma simulacao completa com validacao basica.</p>
         </div>
       </div>
     </section>
 
     <section class="section">
       <div class="container payment-layout">
-        <div id="checkout-root">
-          <div id="test-mode-banner" class="feedback error" hidden>Modo de teste: nenhum valor real será cobrado. Use os cartões de teste do Mercado Pago.</div>
+        <form id="payment-form" class="admin-card">
+          <h2>Pagamento seguro</h2>
+          <p class="muted-text">Escolha PIX ou cartao sem sair da loja. Os dados sao processados com seguranca pelo Mercado Pago.</p>
 
-          <form id="customer-form" class="admin-card" novalidate>
-            <h2>1. Seus dados</h2>
-            <div class="form-grid">
-              <div class="field-full">
-                <label for="customer-name">Nome completo</label>
-                <input class="input" id="customer-name" name="customerName" type="text" autocomplete="name" required minlength="3">
-              </div>
-              <div class="field">
-                <label for="customer-email">Email</label>
-                <input class="input" id="customer-email" name="customerEmail" type="email" autocomplete="email" required>
-              </div>
-              <div class="field">
-                <label for="customer-phone">Celular / WhatsApp</label>
-                <input class="input" id="customer-phone" name="customerPhone" type="tel" autocomplete="tel" inputmode="tel" placeholder="(11) 99999-9999" required minlength="14">
+          <div class="form-grid" style="margin-top: 20px;">
+            <div id="delivery-address-fields" class="field-full">
+              <label>Endereco para entrega</label>
+              <p class="muted-text">Para retirada na loja, o endereco nao e necessario.</p>
+              <div class="form-grid delivery-address-grid">
+                <div class="field-full"><input class="input" id="delivery-street" type="text" placeholder="Rua, avenida ou logradouro"></div>
+                <div class="field"><input class="input" id="delivery-number" type="text" placeholder="Numero"></div>
+                <div class="field"><input class="input" id="delivery-complement" type="text" placeholder="Complemento (opcional)"></div>
+                <div class="field"><input class="input" id="delivery-neighborhood" type="text" placeholder="Bairro"></div>
+                <div class="field"><input class="input" id="delivery-city" type="text" placeholder="Cidade / UF"></div>
               </div>
             </div>
-
-            <div id="delivery-address-fields" hidden>
-              <h2>2. Endereço de entrega</h2>
-              <div class="form-grid">
-                <div class="field">
-                  <label for="delivery-cep">CEP</label>
-                  <input class="input" id="delivery-cep" name="cep" type="text" readonly>
-                </div>
-                <div class="field">
-                  <label for="delivery-state">Estado (UF)</label>
-                  <input class="input" id="delivery-state" name="state" type="text" maxlength="2" autocomplete="address-level1" data-required>
-                </div>
-                <div class="field-full">
-                  <label for="delivery-street">Rua / Avenida</label>
-                  <input class="input" id="delivery-street" name="street" type="text" autocomplete="address-line1" data-required>
-                </div>
-                <div class="field">
-                  <label for="delivery-number">Número</label>
-                  <input class="input" id="delivery-number" name="number" type="text" data-required>
-                </div>
-                <div class="field">
-                  <label for="delivery-complement">Complemento (opcional)</label>
-                  <input class="input" id="delivery-complement" name="complement" type="text" autocomplete="address-line2">
-                </div>
-                <div class="field">
-                  <label for="delivery-neighborhood">Bairro</label>
-                  <input class="input" id="delivery-neighborhood" name="neighborhood" type="text" data-required>
-                </div>
-                <div class="field">
-                  <label for="delivery-city">Cidade</label>
-                  <input class="input" id="delivery-city" name="city" type="text" autocomplete="address-level2" data-required>
-                </div>
-              </div>
-            </div>
-          </form>
-
-          <div class="admin-card">
-            <h2>Pagamento</h2>
-            <div id="paymentBrick_container"></div>
-            <div id="payment-feedback" class="feedback" role="alert"></div>
-            <p class="muted-text">Ao finalizar você concorda com os <a href="./termos.html">termos de uso</a> e a <a href="./trocas-e-devolucoes.html">política de trocas</a>.</p>
+            <div id="paymentBrick_container" class="field-full"></div>
           </div>
-        </div>
+
+          <div id="payment-feedback" class="feedback">Carregando as opcoes de pagamento seguras...</div>
+          <div id="pix-result" class="field-full"></div>
+        </form>
 
         <aside id="payment-summary"></aside>
       </div>
@@ -123,42 +68,17 @@
   </main>
 
   <footer class="site-footer">
-    <div class="container footer-grid">
-      <div>
-        <h4>JS Multimarcas Premium</h4>
-        <p class="muted-text">Multimarcas premium no Pan-Americano, Jaraguá - SP. Peças selecionadas de Nike, Adidas, Lacoste, Armani e Hugo Boss, com retirada na loja e entrega para todo o Brasil.</p>
-      </div>
-      <div>
-        <h4>Loja</h4>
-        <p><a href="./produtos.html">Todos os produtos</a></p>
-        <p><a href="./carrinho.html">Carrinho</a></p>
-        <p><a href="./conta.html">Minha conta</a></p>
-      </div>
-      <div>
-        <h4>Ajuda</h4>
-        <p><a href="./trocas-e-devolucoes.html">Trocas e devoluções</a></p>
-        <p><a href="./privacidade.html">Política de privacidade</a></p>
-        <p><a href="./termos.html">Termos de uso</a></p>
-        <p><a data-store="whatsapp" href="#" target="_blank" rel="noopener">Fale no WhatsApp</a></p>
-      </div>
-      <div>
-        <h4>Contato</h4>
-        <p><a data-store="email" href="#"></a></p>
-        <p class="muted-text" data-store="phone"></p>
-        <p class="muted-text" data-store="address"></p>
-        <p class="muted-text" data-store="hours"></p>
-      </div>
-    </div>
-    <div class="container footer-copy">
-      <span>© <span data-year></span> JS Multimarcas Premium.</span>
-      <span data-store="cnpj" data-store-prefix="CNPJ " data-store-optional></span>
-      <span>Pagamentos processados com segurança pelo Mercado Pago: PIX, débito e crédito.</span>
-    </div>
+    <div class="container footer-copy">© <span data-year></span> JS Multimarcas Premium.</div>
   </footer>
 
+  <script src="./js/storage.js"></script>
+  <script src="./js/app.js"></script>
+  <script>
+    // API publicada no Render. Deixe vazio apenas ao executar pelo servidor local.
+    window.JSMP_API_BASE_URL = "https://loja-multimarcas.onrender.com";
+  </script>
   <script src="https://sdk.mercadopago.com/js/v2"></script>
-  <script src="./js/storage.js?v=5bfd8da7f5"></script>
-  <script src="./js/app.js?v=5bfd8da7f5"></script>
-  <script src="./js/payment.js?v=5bfd8da7f5"></script>
+  <script src="./js/payment.js"></script>
 </body>
 </html>
+
