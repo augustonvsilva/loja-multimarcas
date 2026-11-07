@@ -9,6 +9,8 @@ class HttpError extends Error {
 }
 
 const DEFAULT_ALLOWED_ORIGINS = [
+  "https://www.jsmultimarcaspremium.com.br",
+  "https://jsmultimarcaspremium.com.br",
   "https://augustonvsilva.github.io",
   "http://localhost:3000",
   "http://127.0.0.1:3000"

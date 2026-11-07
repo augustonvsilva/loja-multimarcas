@@ -38,11 +38,12 @@
 
   function apiBase() {
     if (window.JSMP_API_BASE_URL) return window.JSMP_API_BASE_URL.replace(/\/$/, "");
-    var host = window.location.hostname;
-    if (host === "localhost" || host === "127.0.0.1" || /\.onrender\.com$/.test(host)) {
-      return window.location.origin;
+    // O GitHub Pages so serve arquivos estaticos; nos demais enderecos (dominio
+    // proprio, onrender.com, localhost) o mesmo servidor responde a API.
+    if (/\.github\.io$/.test(window.location.hostname) || window.location.protocol === "file:") {
+      return DEFAULT_API;
     }
-    return DEFAULT_API;
+    return window.location.origin;
   }
 
   function apiUrl(path) {

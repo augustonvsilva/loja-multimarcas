@@ -2,7 +2,7 @@
 
 Loja virtual da JS Multimarcas Premium (Pan-Americano, Jaraguá - SP).
 
-- **Site:** https://augustonvsilva.github.io/loja-multimarcas/ (GitHub Pages)
+- **Site:** https://www.jsmultimarcaspremium.com.br (Render, mesmo servico da API; espelho em https://augustonvsilva.github.io/loja-multimarcas/)
 - **API:** https://loja-multimarcas.onrender.com (Render) · saúde: `/api/health`
 
 ## Como funciona

@@ -9,7 +9,7 @@ const crypto = require("crypto");
 
 const ROOT = path.resolve(__dirname, "..");
 const SRC = path.join(ROOT, "src", "pages");
-const SITE_URL = "https://augustonvsilva.github.io/loja-multimarcas";
+const SITE_URL = "https://www.jsmultimarcaspremium.com.br";
 const STORE = "JS Multimarcas Premium";
 
 function walk(dir) {

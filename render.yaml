@@ -22,9 +22,9 @@ services:
       - key: AUTH_SECRET
         generateValue: true
       - key: SITE_URL
-        value: https://augustonvsilva.github.io/loja-multimarcas
+        value: https://www.jsmultimarcaspremium.com.br
       - key: ALLOWED_ORIGINS
-        value: https://augustonvsilva.github.io
+        value: https://www.jsmultimarcaspremium.com.br,https://jsmultimarcaspremium.com.br,https://augustonvsilva.github.io
       - key: MERCADOPAGO_PUBLIC_KEY
         sync: false
       - key: MERCADOPAGO_ACCESS_TOKEN

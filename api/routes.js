@@ -7,7 +7,7 @@ const { quoteShipping, normalizeCep } = require("./shipping");
 const { getDb } = require("./db");
 const email = require("./email");
 
-const SITE_URL = (process.env.SITE_URL || "https://augustonvsilva.github.io/loja-multimarcas").replace(/\/$/, "");
+const SITE_URL = (process.env.SITE_URL || "https://www.jsmultimarcaspremium.com.br").replace(/\/$/, "");
 
 // Dispara emails quando o pedido acabou de ser pago (sem travar a resposta).
 function afterPaymentUpdate(row) {
