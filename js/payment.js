@@ -109,7 +109,7 @@ function renderSummary() {
   var shipping = checkoutState.shipping ? checkoutState.shipping.selected : null;
   var shippingLine = shipping
     ? '<div class="summary-line"><span>' + escapeHtml(shipping.label) + (checkoutState.shipping.cep && shipping.method !== "retirada" ? " · CEP " + formatCep(checkoutState.shipping.cep) : "") + "</span><strong>" + (shipping.amount ? formatCurrency(shipping.amount) : "Grátis") + "</strong></div>"
-    : '<div class="summary-line"><span>Entrega</span><strong>escolha ao lado</strong></div>';
+    : '<div class="summary-line"><span>Entrega</span><strong>a escolher</strong></div>';
   document.querySelector("#payment-summary").innerHTML = [
     '<div class="summary-card">',
     "<h3>Seu pedido</h3>",
