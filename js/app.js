@@ -3,12 +3,12 @@
 // Dados institucionais exibidos no site. Atualize aqui (um unico lugar).
 window.JSMP_STORE = {
   name: "JS Multimarcas Premium",
-  email: "contato@jsmultimarcas.com",
+  email: "jsmultimarcaspremium@gmail.com",
   phone: "(11) 95142-8703",
   whatsapp: "5511951428703",
   address: "Rua Jacinto Pereira, 151 - Pan-Americano, Jaraguá - São Paulo/SP",
   cep: "02992-130",
-  cnpj: "",
+  cnpj: "57.547.395/0001-64",
   hours: "Seg a sab, 10h as 19h"
 };
 
