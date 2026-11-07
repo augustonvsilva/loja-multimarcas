@@ -155,13 +155,18 @@
     return [productId, size || "", number || ""].join("|");
   }
 
-  function addToCart(product, options) {
+  // settings.ifMissing: nao soma outra unidade se o item ja estiver no carrinho
+  // (usado pelo "Comprar agora").
+  function addToCart(product, options, settings) {
     var payload = options || {};
     if (!product || Number(product.stock || 0) <= 0) {
       return { ok: false, message: "Produto indisponível no momento." };
     }
     var key = cartKey(product.id, payload.size, payload.number);
     var cart = getCart();
+    if (settings && settings.ifMissing && cart.some(function (entry) { return entry.key === key; })) {
+      return { ok: true };
+    }
     var inCart = cart.reduce(function (sum, entry) {
       return entry.productId === product.id ? sum + entry.quantity : sum;
     }, 0);

@@ -176,6 +176,68 @@ function quoteShipping(cep, payload) {
   });
 }
 
+// ---------- Escolha da entrega (carrinho e checkout) ----------
+// A retirada na loja aparece sempre, mesmo antes de o cliente informar o CEP.
+
+function pickupOption() {
+  return {
+    method: "retirada",
+    label: "Retirada na loja",
+    amount: 0,
+    deadline: "no mesmo dia útil",
+    description: "Retire na loja: " + window.JSMP_STORE.address + ".",
+    source: "loja"
+  };
+}
+
+function shippingChoices(shipping) {
+  var options = shipping && shipping.options ? shipping.options : [];
+  var pickup = options.find(function (o) { return o.method === "retirada"; }) || pickupOption();
+  return [pickup].concat(options.filter(function (o) { return o.method !== "retirada"; }));
+}
+
+function buildShippingChoices(shipping, inputName) {
+  var selected = shipping && shipping.selected ? shipping.selected.method : "";
+  return shippingChoices(shipping).map(function (option) {
+    var details = option.method === "retirada"
+      ? option.deadline + ". " + (option.description || "")
+      : option.deadline + (option.source === "estimativa" ? " (valor estimado)" : "");
+    return [
+      '<label class="shipping-option">',
+      '<input type="radio" name="' + inputName + '" value="' + escapeHtml(option.method) + '"' + (option.method === selected ? " checked" : "") + ">",
+      "<span>",
+      "<strong>" + escapeHtml(option.label) + " - " + (option.amount ? formatCurrency(option.amount) : "Grátis") + "</strong>",
+      "<small>" + escapeHtml(details) + "</small>",
+      "</span>",
+      "</label>"
+    ].join("");
+  }).join("");
+}
+
+function selectShippingOption(method) {
+  var shipping = window.JSMP.getShipping() || { cep: "", options: [] };
+  var choice = shippingChoices(shipping).find(function (o) { return o.method === method; });
+  if (!choice) return null;
+  shipping.selected = choice;
+  window.JSMP.saveShipping(shipping);
+  return shipping;
+}
+
+// Cota o frete do carrinho atual e salva. Com um CEP novo, seleciona a primeira
+// entrega em casa; ao recalcular o mesmo CEP, mantem a opcao que o cliente escolheu.
+function quoteAndSaveShipping(cep) {
+  return quoteShipping(cep, { cart: window.JSMP.cartPayload() }).then(function (result) {
+    if (!result) return null;
+    var previous = window.JSMP.getShipping();
+    var keep = previous && previous.selected && previous.cep === result.cep ? previous.selected.method : "";
+    var selected = result.options.find(function (o) { return keep && o.method === keep; }) ||
+      result.options.find(function (o) { return o.method !== "retirada"; }) || result.options[0];
+    var shipping = { cep: result.cep, options: result.options, selected: selected };
+    window.JSMP.saveShipping(shipping);
+    return shipping;
+  });
+}
+
 // Busca endereco pelo CEP (ViaCEP) para preencher o formulario.
 function lookupAddress(cep) {
   var normalized = normalizeCep(cep);

@@ -14,8 +14,21 @@
     <div id="checkout-root">
       <div id="test-mode-banner" class="feedback error" hidden>Modo de teste: nenhum valor real será cobrado. Use os cartões de teste do Mercado Pago.</div>
 
+      <section id="checkout-shipping" class="admin-card">
+        <h2>1. Como você quer receber?</h2>
+        <div id="checkout-shipping-options" class="shipping-options"></div>
+        <div class="shipping-card-form checkout-shipping-form">
+          <div class="shipping-input-wrap">
+            <label for="checkout-cep">Receber em casa: informe o CEP</label>
+            <input class="input shipping-input" id="checkout-cep" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000" maxlength="9">
+          </div>
+          <button class="btn-secondary shipping-action" id="checkout-calc-shipping" type="button">Calcular</button>
+        </div>
+        <div id="checkout-shipping-feedback" class="shipping-result" hidden></div>
+      </section>
+
       <form id="customer-form" class="admin-card" novalidate>
-        <h2>1. Seus dados</h2>
+        <h2>2. Seus dados</h2>
         <div class="form-grid">
           <div class="field-full">
             <label for="customer-name">Nome completo</label>
@@ -32,7 +45,7 @@
         </div>
 
         <div id="delivery-address-fields" hidden>
-          <h2>2. Endereço de entrega</h2>
+          <h2>3. Endereço de entrega</h2>
           <div class="form-grid">
             <div class="field">
               <label for="delivery-cep">CEP</label>

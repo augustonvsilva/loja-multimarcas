@@ -50,8 +50,9 @@ function renderProductDetail(root, product) {
     buildOptionPicker("size", "Tamanho", product.hasSizes ? product.sizes : []),
     buildOptionPicker("number", "Numeração", product.hasNumbers ? product.numbers : []),
     '<div class="field-full button-row">',
-    '<button class="btn" type="submit"' + (inStock ? "" : " disabled") + ">" + (inStock ? "Adicionar ao carrinho" : "Produto esgotado") + "</button>",
-    '<a class="btn-secondary" href="./carrinho.html">Ver carrinho</a>',
+    inStock
+      ? '<button class="btn" type="submit">Comprar agora</button><button class="btn-secondary" type="button" id="add-to-cart">Adicionar ao carrinho</button>'
+      : '<button class="btn" type="submit" disabled>Produto esgotado</button>',
     "</div>",
     "</form>",
     '<div id="product-feedback" class="feedback" role="status">' + (inStock ? "" : "Este produto está esgotado. Fale com a loja pelo WhatsApp para saber da reposição.") + "</div>",
@@ -105,27 +106,45 @@ function renderProductDetail(root, product) {
     }
   });
 
-  document.querySelector("#product-purchase-form").addEventListener("submit", function (event) {
-    event.preventDefault();
-    var form = event.target;
+  var form = document.querySelector("#product-purchase-form");
+  var feedback = document.querySelector("#product-feedback");
+
+  var readVariation = function () {
     var size = form.querySelector('input[name="size"]:checked');
     var number = form.querySelector('input[name="number"]:checked');
-    var feedback = document.querySelector("#product-feedback");
-
     if (product.hasSizes && !size) return setFeedback(feedback, "Selecione o tamanho.", "error");
     if (product.hasNumbers && !number) return setFeedback(feedback, "Selecione a numeração.", "error");
+    return { size: size ? size.value : "", number: number ? number.value : "" };
+  };
 
-    var result = window.JSMP.addToCart(product, { size: size ? size.value : "", number: number ? number.value : "" });
+  // "Comprar agora": coloca o item no carrinho (sem duplicar) e vai direto ao pagamento.
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    var variation = readVariation();
+    if (!variation) return;
+    var result = window.JSMP.addToCart(product, variation, { ifMissing: true });
     if (!result.ok) return setFeedback(feedback, result.message, "error");
-    feedback.className = "feedback success";
-    feedback.innerHTML = 'Produto adicionado ao carrinho. <a href="./carrinho.html">Finalizar compra</a>';
-    setupHeader();
+    window.location.href = "./pagamento.html";
   });
+
+  var addButton = document.querySelector("#add-to-cart");
+  if (addButton) {
+    addButton.addEventListener("click", function () {
+      var variation = readVariation();
+      if (!variation) return;
+      var result = window.JSMP.addToCart(product, variation);
+      if (!result.ok) return setFeedback(feedback, result.message, "error");
+      feedback.className = "feedback success";
+      feedback.innerHTML = 'Produto adicionado ao carrinho. <a href="./carrinho.html">Ver carrinho</a>';
+      setupHeader();
+    });
+  }
 }
 
 function setFeedback(node, message, tone) {
   node.className = "feedback " + tone;
   node.textContent = message;
+  return null;
 }
 
 function buildOptionPicker(name, label, values) {

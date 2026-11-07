@@ -85,8 +85,8 @@ function renderCartPage() {
     '<div class="shipping-input-wrap"><label for="cart-cep">CEP</label><input class="input shipping-input" id="cart-cep" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000" maxlength="9" value="' + escapeHtml(shipping ? formatCep(shipping.cep) : "") + '"></div>',
     '<button class="btn-secondary shipping-action" id="calc-cart-shipping" type="button">Calcular</button>',
     "</div>",
-    '<div id="cart-shipping-options" class="shipping-options">' + buildCartShippingOptions(shipping) + "</div>",
-    '<div id="cart-shipping-feedback" class="shipping-result">' + (shipping ? "" : 'Informe o CEP para ver as opções de entrega, ou <button class="link-button" type="button" id="choose-pickup">retire grátis na loja</button>.') + "</div>",
+    '<div id="cart-shipping-options" class="shipping-options">' + buildShippingChoices(shipping, "cart-shipping-method") + "</div>",
+    '<div id="cart-shipping-feedback" class="shipping-result"' + (shipping && shipping.cep ? " hidden" : "") + ">Para receber em casa, informe o CEP.</div>",
     "</section>",
     '<div class="button-row">',
     '<button class="btn" type="button" id="go-checkout"' + (hasProblem ? " disabled" : "") + ">Finalizar compra</button>",
@@ -104,37 +104,18 @@ function buildCartVariationLabel(item) {
   return "Tamanho único";
 }
 
-function buildCartShippingOptions(shipping) {
-  if (!shipping || !shipping.options) return "";
-  return shipping.options.map(function (option) {
-    var checked = shipping.selected && shipping.selected.method === option.method;
-    return [
-      '<label class="shipping-option">',
-      '<input type="radio" name="cart-shipping-method" value="' + escapeHtml(option.method) + '"' + (checked ? " checked" : "") + ">",
-      "<span>",
-      "<strong>" + escapeHtml(option.label) + " - " + (option.amount ? formatCurrency(option.amount) : "Grátis") + "</strong>",
-      "<small>" + escapeHtml(option.deadline) + (option.source === "estimativa" ? " (valor estimado)" : "") + "</small>",
-      "</span>",
-      "</label>"
-    ].join("");
-  }).join("");
-}
-
 function calculateCartShipping() {
   var feedback = document.querySelector("#cart-shipping-feedback");
   var cep = document.querySelector("#cart-cep").value;
+  feedback.hidden = false;
   feedback.className = "shipping-result";
   feedback.textContent = "Consultando frete...";
-  quoteShipping(cep, { cart: window.JSMP.cartPayload() }).then(function (result) {
+  quoteAndSaveShipping(cep).then(function (result) {
     if (!result) {
       feedback.className = "shipping-result error";
       feedback.textContent = "Digite um CEP válido com 8 números.";
       return;
     }
-    var previous = window.JSMP.getShipping();
-    var selected = result.options.find(function (o) { return previous && previous.selected && o.method === previous.selected.method; }) ||
-      result.options.find(function (o) { return o.method !== "retirada"; }) || result.options[0];
-    window.JSMP.saveShipping({ cep: result.cep, options: result.options, selected: selected });
     renderCartPage();
   }).catch(function (error) {
     feedback.className = "shipping-result error";
@@ -170,33 +151,15 @@ function attachCartEvents() {
   });
   document.querySelector("#calc-cart-shipping").addEventListener("click", calculateCartShipping);
 
-  var pickup = document.querySelector("#choose-pickup");
-  if (pickup) {
-    pickup.addEventListener("click", function () {
-      var option = { method: "retirada", label: "Retirada na loja", amount: 0, deadline: "no mesmo dia útil", source: "loja" };
-      window.JSMP.saveShipping({ cep: "", options: [option], selected: option });
-      renderCartPage();
-    });
-  }
-
   document.querySelectorAll('[name="cart-shipping-method"]').forEach(function (input) {
     input.addEventListener("change", function () {
-      var shipping = window.JSMP.getShipping();
-      shipping.selected = shipping.options.find(function (o) { return o.method === input.value; });
-      window.JSMP.saveShipping(shipping);
+      selectShippingOption(input.value);
       renderCartPage();
     });
   });
 
+  // A entrega tambem pode ser escolhida na pagina de pagamento.
   document.querySelector("#go-checkout").addEventListener("click", function () {
-    var shipping = window.JSMP.getShipping();
-    if (!shipping || !shipping.selected) {
-      var feedback = document.querySelector("#cart-shipping-feedback");
-      feedback.className = "shipping-result error";
-      feedback.textContent = "Calcule o frete e escolha como quer receber.";
-      document.querySelector("#cart-cep").focus();
-      return;
-    }
     window.location.href = "./pagamento.html";
   });
 }

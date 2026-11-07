@@ -1,5 +1,5 @@
 // Checkout: dados do cliente, endereco, pagamento via Mercado Pago Bricks e acompanhamento do pedido.
-var checkoutState = { items: [], shipping: null, subtotal: 0, total: 0, brick: null, pollTimer: null };
+var checkoutState = { items: [], shipping: null, subtotal: 0, total: 0, brick: null, brickAmount: null, brickSeq: 0, addressCep: "", pollTimer: null };
 
 document.addEventListener("DOMContentLoaded", function () {
   if (!document.querySelector("#checkout-root")) return;
@@ -31,38 +31,85 @@ function prepareCheckout(products) {
     window.location.href = "./carrinho.html";
     return;
   }
-  var shipping = window.JSMP.getShipping();
-  if (!shipping || !shipping.selected) {
-    window.location.href = "./carrinho.html";
-    return;
-  }
-
   checkoutState.items = items;
   checkoutState.subtotal = items.reduce(function (sum, item) { return sum + item.subtotal; }, 0);
+  setupCustomerForm();
+  setupShippingPicker();
 
-  var refresh = shipping.selected.method === "retirada"
-    ? Promise.resolve(shipping)
-    : quoteShipping(shipping.cep, { cart: window.JSMP.cartPayload() }).then(function (result) {
-      var selected = result && result.options.find(function (o) { return o.method === shipping.selected.method; });
-      if (!selected) throw new Error("A forma de entrega escolhida não está mais disponível. Volte ao carrinho e escolha outra.");
-      var updated = { cep: result.cep, options: result.options, selected: selected };
-      window.JSMP.saveShipping(updated);
-      return updated;
+  // Recalcula o frete salvo (o valor depende do carrinho atual).
+  var saved = window.JSMP.getShipping();
+  if (saved && saved.cep) {
+    document.querySelector("#checkout-cep").value = formatCep(saved.cep);
+    quoteAndSaveShipping(saved.cep).catch(function (error) {
+      showShippingFeedback(error.message, "error");
+    }).then(applyShipping);
+  } else {
+    applyShipping();
+  }
+}
+
+// ---------- Entrega ----------
+
+function setupShippingPicker() {
+  var cepInput = document.querySelector("#checkout-cep");
+  maskCepInput(cepInput);
+  var calc = function () {
+    showShippingFeedback("Consultando frete...", "");
+    quoteAndSaveShipping(cepInput.value).then(function (result) {
+      if (!result) return showShippingFeedback("Digite um CEP válido com 8 números.", "error");
+      showShippingFeedback("", "");
+      applyShipping();
+    }).catch(function (error) {
+      showShippingFeedback(error.message, "error");
     });
-
-  refresh.then(function (current) {
-    checkoutState.shipping = current;
-    checkoutState.total = Number((checkoutState.subtotal + current.selected.amount).toFixed(2));
-    renderSummary();
-    setupCustomerForm();
-    return mountPaymentBrick();
-  }).catch(function (error) {
-    setPaymentFeedback(error.message, "error");
+  };
+  document.querySelector("#checkout-calc-shipping").addEventListener("click", calc);
+  cepInput.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      calc();
+    }
+  });
+  document.querySelector("#checkout-shipping-options").addEventListener("change", function (event) {
+    if (event.target.name !== "checkout-shipping-method") return;
+    selectShippingOption(event.target.value);
+    applyShipping();
   });
 }
 
+function showShippingFeedback(message, tone) {
+  var node = document.querySelector("#checkout-shipping-feedback");
+  node.className = "shipping-result" + (tone ? " " + tone : "");
+  node.textContent = message;
+  node.hidden = !message;
+}
+
+// Atualiza resumo, endereco e pagamento conforme a entrega escolhida.
+function applyShipping() {
+  var shipping = window.JSMP.getShipping();
+  checkoutState.shipping = shipping && shipping.selected ? shipping : null;
+  var amount = checkoutState.shipping ? checkoutState.shipping.selected.amount : 0;
+  checkoutState.total = Number((checkoutState.subtotal + amount).toFixed(2));
+
+  document.querySelector("#checkout-shipping-options").innerHTML = buildShippingChoices(shipping, "checkout-shipping-method");
+  renderSummary();
+  updateDeliveryFields();
+
+  if (!checkoutState.shipping) {
+    unmountBrick();
+    setPaymentFeedback("Escolha como quer receber para ver as formas de pagamento.", "");
+    return;
+  }
+  if (!checkoutState.brick || checkoutState.brickAmount !== checkoutState.total) {
+    refreshBrick();
+  }
+}
+
 function renderSummary() {
-  var shipping = checkoutState.shipping.selected;
+  var shipping = checkoutState.shipping ? checkoutState.shipping.selected : null;
+  var shippingLine = shipping
+    ? '<div class="summary-line"><span>' + escapeHtml(shipping.label) + (checkoutState.shipping.cep && shipping.method !== "retirada" ? " · CEP " + formatCep(checkoutState.shipping.cep) : "") + "</span><strong>" + (shipping.amount ? formatCurrency(shipping.amount) : "Grátis") + "</strong></div>"
+    : '<div class="summary-line"><span>Entrega</span><strong>escolha ao lado</strong></div>';
   document.querySelector("#payment-summary").innerHTML = [
     '<div class="summary-card">',
     "<h3>Seu pedido</h3>",
@@ -71,10 +118,10 @@ function renderSummary() {
       var variation = item.size ? " · Tam. " + item.size : item.number ? " · Nº " + item.number : "";
       return '<div class="summary-line"><span>' + item.quantity + "x " + escapeHtml(item.name + variation) + "</span><strong>" + formatCurrency(item.subtotal) + "</strong></div>";
     }).join(""),
-    '<div class="summary-line"><span>' + escapeHtml(shipping.label) + (checkoutState.shipping.cep ? " · CEP " + formatCep(checkoutState.shipping.cep) : "") + "</span><strong>" + (shipping.amount ? formatCurrency(shipping.amount) : "Grátis") + "</strong></div>",
+    shippingLine,
     '<div class="summary-line"><span>Total</span><strong class="product-price">' + formatCurrency(checkoutState.total) + "</strong></div>",
     "</div>",
-    '<p class="muted-text">' + escapeHtml(shipping.deadline || "") + '. <a href="./carrinho.html">Alterar</a></p>',
+    '<p class="muted-text">' + (shipping ? escapeHtml(shipping.deadline || "") + ". " : "") + '<a href="./carrinho.html">Editar carrinho</a></p>',
     "</div>"
   ].join("");
 }
@@ -88,33 +135,42 @@ function setupCustomerForm() {
     form.customerEmail.readOnly = true;
   }
 
-  var isDelivery = checkoutState.shipping.selected.method !== "retirada";
-  document.querySelector("#delivery-address-fields").hidden = !isDelivery;
-  document.querySelectorAll("#delivery-address-fields [data-required]").forEach(function (input) {
-    input.required = isDelivery;
-  });
-
   var phone = form.customerPhone;
   phone.addEventListener("input", function () {
     var d = phone.value.replace(/\D/g, "").slice(0, 11);
     phone.value = d.length > 6 ? "(" + d.slice(0, 2) + ") " + d.slice(2, d.length - 4) + "-" + d.slice(-4) : d.length > 2 ? "(" + d.slice(0, 2) + ") " + d.slice(2) : d;
   });
+}
 
-  if (isDelivery) {
-    form.cep.value = formatCep(checkoutState.shipping.cep);
-    lookupAddress(checkoutState.shipping.cep).then(function (address) {
-      if (!address) return;
-      if (!form.street.value) form.street.value = address.logradouro || "";
-      if (!form.neighborhood.value) form.neighborhood.value = address.bairro || "";
-      if (!form.city.value) form.city.value = address.localidade || "";
-      if (!form.state.value) form.state.value = address.uf || "";
-      if (form.street.value) form.number.focus({ preventScroll: true });
-    });
-  }
+// Mostra o endereco so para entrega em casa e o preenche pelo CEP escolhido.
+function updateDeliveryFields() {
+  var form = document.querySelector("#customer-form");
+  var shipping = checkoutState.shipping;
+  var isDelivery = Boolean(shipping && shipping.selected.method !== "retirada");
+  document.querySelector("#delivery-address-fields").hidden = !isDelivery;
+  document.querySelectorAll("#delivery-address-fields [data-required]").forEach(function (input) {
+    input.required = isDelivery;
+  });
+  if (!isDelivery || shipping.cep === checkoutState.addressCep) return;
+
+  var cep = shipping.cep;
+  checkoutState.addressCep = cep;
+  form.cep.value = formatCep(cep);
+  lookupAddress(cep).then(function (address) {
+    if (!address || checkoutState.addressCep !== cep) return;
+    form.street.value = address.logradouro || "";
+    form.neighborhood.value = address.bairro || "";
+    form.city.value = address.localidade || "";
+    form.state.value = address.uf || "";
+    if (form.street.value) form.number.focus({ preventScroll: true });
+  });
 }
 
 function readCustomerForm() {
   var form = document.querySelector("#customer-form");
+  if (!checkoutState.shipping) {
+    throw new Error("Escolha como quer receber o pedido.");
+  }
   if (!form.reportValidity()) {
     throw new Error("Preencha seus dados e o endereço antes de pagar.");
   }
@@ -155,7 +211,9 @@ function mountPaymentBrick() {
       },
       callbacks: {
         onReady: function () {
-          setPaymentFeedback("", "");
+          // Limpa so o "Carregando"; uma recusa de pagamento continua visivel.
+          var node = document.querySelector("#payment-feedback");
+          if (node && /^Carregando/.test(node.textContent)) setPaymentFeedback("", "");
         },
         onSubmit: function (data) {
           return submitPayment(data.formData);
@@ -165,10 +223,35 @@ function mountPaymentBrick() {
           setPaymentFeedback("Não foi possível carregar uma opção de pagamento. Atualize a página.", "error");
         }
       }
-    }).then(function (controller) {
-      checkoutState.brick = controller;
     });
   });
+}
+
+// (Re)monta o formulario de pagamento com o total atual. Se o cliente trocar a
+// entrega enquanto ele carrega, a montagem antiga e descartada.
+function refreshBrick() {
+  var seq = ++checkoutState.brickSeq;
+  var amount = checkoutState.total;
+  unmountBrick();
+  setPaymentFeedback("Carregando formas de pagamento...", "");
+  mountPaymentBrick().then(function (controller) {
+    if (seq !== checkoutState.brickSeq) {
+      controller.unmount();
+      return;
+    }
+    checkoutState.brick = controller;
+    checkoutState.brickAmount = amount;
+  }).catch(function (error) {
+    setPaymentFeedback(error.message, "error");
+  });
+}
+
+function unmountBrick() {
+  if (checkoutState.brick) {
+    checkoutState.brick.unmount();
+    checkoutState.brick = null;
+  }
+  checkoutState.brickAmount = null;
 }
 
 function submitPayment(formData) {
@@ -191,8 +274,8 @@ function submitPayment(formData) {
   }).then(function (result) {
     if (result.status === "rejected" || result.status === "cancelled") {
       var message = rejectionMessage(result.statusDetail);
+      refreshBrick();
       setPaymentFeedback(message, "error");
-      remountBrick();
       return;
     }
     var order = {
@@ -212,14 +295,6 @@ function submitPayment(formData) {
     setPaymentFeedback(error.message, "error");
     throw error;
   });
-}
-
-function remountBrick() {
-  if (checkoutState.brick) {
-    checkoutState.brick.unmount();
-    checkoutState.brick = null;
-  }
-  mountPaymentBrick().catch(function (error) { setPaymentFeedback(error.message, "error"); });
 }
 
 function rejectionMessage(detail) {
