@@ -1,10 +1,10 @@
-// Vitrine: grades de produtos, filtros por marca/categoria, busca e ordenacao.
+// Vitrine: grades de produtos, filtros por categoria/tamanho, busca e ordenacao.
 var catalogProducts = [];
 
 document.addEventListener("DOMContentLoaded", function () {
   var grids = document.querySelectorAll("[data-product-grid]");
-  var brandGrid = document.querySelector("[data-dynamic-brand-grid]");
-  if (!grids.length && !brandGrid) return;
+  var categoryGrid = document.querySelector("[data-dynamic-category-grid]");
+  if (!grids.length && !categoryGrid) return;
 
   grids.forEach(function (grid) { grid.innerHTML = loadingMarkup("Carregando produtos..."); });
   setupCatalogControls();
@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", function () {
 function renderCatalog(products) {
   catalogProducts = products || [];
   setupCatalogFilters();
-  renderDynamicBrandGrid();
+  renderDynamicCategoryGrid();
   rerenderCatalogGrids();
 }
 
@@ -44,10 +44,10 @@ function uniqueItems(items) {
   });
 }
 
-function buildCatalogUrl(brand, category) {
+function buildCatalogUrl(category, size) {
   var params = new URLSearchParams();
-  if (brand) params.set("brand", brand);
   if (category) params.set("category", category);
+  if (size) params.set("size", size);
   var query = params.toString();
   return "./produtos.html" + (query ? "?" + query : "");
 }
@@ -56,41 +56,72 @@ function buildFilterChip(href, label, isActive) {
   return '<a class="filter-chip' + (isActive ? " active" : "") + '" href="' + escapeHtml(href) + '">' + escapeHtml(label) + "</a>";
 }
 
-function setupCatalogFilters() {
-  var brandFilters = document.querySelector("#brand-filters");
-  var categoryFilters = document.querySelector("#category-filters");
-  if (!brandFilters && !categoryFilters) return;
-
-  var params = new URLSearchParams(window.location.search);
-  var activeBrand = params.get("brand") || "";
-  var activeCategory = params.get("category") || "";
-  var brands = uniqueItems(catalogProducts.map(function (p) { return p.brand; })).sort();
-  var categories = uniqueItems(catalogProducts
-    .filter(function (p) { return !activeBrand || p.brand === activeBrand; })
-    .map(function (p) { return p.category; })).sort();
-
-  if (brandFilters) {
-    brandFilters.innerHTML = buildFilterChip("./produtos.html", "Todas", !activeBrand) +
-      brands.map(function (brand) { return buildFilterChip(buildCatalogUrl(brand, ""), brand, activeBrand === brand); }).join("");
-  }
-  if (categoryFilters) {
-    categoryFilters.innerHTML = buildFilterChip(buildCatalogUrl(activeBrand, ""), "Todas", !activeCategory) +
-      categories.map(function (category) { return buildFilterChip(buildCatalogUrl(activeBrand, category), category, activeCategory === category); }).join("");
-  }
+function capitalize(text) {
+  var value = String(text || "");
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-function renderDynamicBrandGrid() {
-  var grid = document.querySelector("[data-dynamic-brand-grid]");
+// Tamanhos de roupa na ordem da arara (PP -> XGG); numeracoes em ordem numerica.
+var SIZE_ORDER = ["PP", "P", "M", "G", "GG", "XG", "XGG", "EG", "EGG", "U", "UNICO", "ÚNICO"];
+
+function compareSizes(a, b) {
+  var ia = SIZE_ORDER.indexOf(String(a).toUpperCase());
+  var ib = SIZE_ORDER.indexOf(String(b).toUpperCase());
+  var na = Number(a);
+  var nb = Number(b);
+  if (ia >= 0 && ib >= 0) return ia - ib;
+  if (ia >= 0) return -1;
+  if (ib >= 0) return 1;
+  if (!isNaN(na) && !isNaN(nb)) return na - nb;
+  if (!isNaN(na)) return 1;
+  if (!isNaN(nb)) return -1;
+  return String(a).localeCompare(String(b), "pt-BR");
+}
+
+function productSizes(product) {
+  return (product.hasSizes ? product.sizes || [] : []).concat(product.hasNumbers ? product.numbers || [] : []).map(String);
+}
+
+function setupCatalogFilters() {
+  var categoryFilters = document.querySelector("#category-filters");
+  var sizeFilters = document.querySelector("#size-filters");
+  if (!categoryFilters) return;
+
+  var params = new URLSearchParams(window.location.search);
+  var activeCategory = params.get("category") || "";
+  var activeSize = params.get("size") || "";
+  var categories = uniqueItems(catalogProducts.map(function (p) { return p.category; }))
+    .sort(function (a, b) { return a.localeCompare(b, "pt-BR"); });
+
+  // Trocar de categoria limpa o tamanho, que pode nao existir na nova categoria.
+  categoryFilters.innerHTML = buildFilterChip(buildCatalogUrl("", ""), "Todas", !activeCategory) +
+    categories.map(function (category) {
+      return buildFilterChip(buildCatalogUrl(category, ""), capitalize(category), activeCategory === category);
+    }).join("");
+
+  if (!sizeFilters) return;
+  var inCategory = catalogProducts.filter(function (p) { return !activeCategory || p.category === activeCategory; });
+  var sizes = uniqueItems([].concat.apply([], inCategory.map(productSizes))).sort(compareSizes);
+  document.querySelector("#size-filter-group").hidden = !sizes.length;
+  sizeFilters.innerHTML = buildFilterChip(buildCatalogUrl(activeCategory, ""), "Todos", !activeSize) +
+    sizes.map(function (size) {
+      return buildFilterChip(buildCatalogUrl(activeCategory, size), size, activeSize === size);
+    }).join("");
+}
+
+function renderDynamicCategoryGrid() {
+  var grid = document.querySelector("[data-dynamic-category-grid]");
   if (!grid) return;
-  var brands = uniqueItems(catalogProducts.map(function (p) { return p.brand; })).sort();
-  grid.innerHTML = brands.map(function (brand) {
-    var items = catalogProducts.filter(function (p) { return p.brand === brand; });
-    var highlight = uniqueItems(items.map(function (p) { return p.category; }))[0] || "Colecao premium";
+  var categories = uniqueItems(catalogProducts.map(function (p) { return p.category; }))
+    .sort(function (a, b) { return a.localeCompare(b, "pt-BR"); });
+  grid.innerHTML = categories.map(function (category) {
+    var items = catalogProducts.filter(function (p) { return p.category === category; });
+    var sizes = uniqueItems([].concat.apply([], items.map(productSizes))).sort(compareSizes);
     return [
-      '<a class="brand-card reveal" href="' + escapeHtml(buildCatalogUrl(brand, "")) + '">',
-      "<span>" + escapeHtml(brand) + "</span>",
-      "<h3>" + escapeHtml(highlight) + " em destaque.</h3>",
-      '<p class="muted-text">' + items.length + " produto(s) nesta marca.</p>",
+      '<a class="brand-card reveal" href="' + escapeHtml(buildCatalogUrl(category, "")) + '">',
+      "<span>" + escapeHtml(capitalize(category)) + "</span>",
+      "<h3>" + items.length + " produto(s)</h3>",
+      '<p class="muted-text">' + (sizes.length ? "Tamanhos: " + escapeHtml(sizes.join(", ")) : "Tamanho único") + "</p>",
       "</a>"
     ].join("");
   }).join("");
@@ -118,8 +149,9 @@ function sortProducts(products, mode) {
 function renderGrid(grid) {
   var mode = grid.getAttribute("data-product-grid");
   var params = new URLSearchParams(window.location.search);
-  var brand = grid.getAttribute("data-brand") || params.get("brand") || "";
+  var brand = grid.getAttribute("data-brand") || "";
   var category = params.get("category") || "";
+  var size = params.get("size") || "";
   var limit = Number(grid.getAttribute("data-limit") || 0);
   var searchNode = document.querySelector("#catalog-search");
   var sortNode = document.querySelector("#catalog-sort");
@@ -129,6 +161,7 @@ function renderGrid(grid) {
   if (mode === "featured") products = products.filter(function (p) { return p.featured && p.stock > 0; });
   if (brand) products = products.filter(function (p) { return p.brand === brand; });
   if (category) products = products.filter(function (p) { return p.category === category; });
+  if (size) products = products.filter(function (p) { return productSizes(p).indexOf(size) >= 0; });
   if (search) {
     products = products.filter(function (p) {
       return normalizeSearch([p.name, p.brand, p.category, p.description].join(" ")).indexOf(search) >= 0;

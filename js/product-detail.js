@@ -32,7 +32,7 @@ function renderProductDetail(root, product) {
   injectProductSchema(product, images[0]);
 
   root.innerHTML = [
-    '<nav class="breadcrumb" aria-label="Você esta em"><a href="./index.html">Home</a> / <a href="./produtos.html?brand=' + encodeURIComponent(product.brand) + '">' + escapeHtml(product.brand) + "</a> / <span>" + escapeHtml(product.name) + "</span></nav>",
+    '<nav class="breadcrumb" aria-label="Você esta em"><a href="./index.html">Home</a> / <a href="./produtos.html?category=' + encodeURIComponent(product.category) + '">' + escapeHtml(product.category.charAt(0).toUpperCase() + product.category.slice(1)) + "</a> / <span>" + escapeHtml(product.name) + "</span></nav>",
     '<article class="glass-panel product-detail-card reveal">',
     '<div class="product-detail-media">',
     '<img id="product-main-image" class="product-detail-image" src="' + escapeHtml(images[0]) + '" alt="' + escapeHtml(product.name) + '">',
