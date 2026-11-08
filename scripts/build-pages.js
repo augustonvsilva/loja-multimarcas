@@ -56,7 +56,7 @@ function footer(base) {
     <div class="container footer-grid">
       <div>
         <h4>${STORE}</h4>
-        <p class="muted-text">Multimarcas premium no Pan-Americano, Jaraguá - SP. Peças selecionadas de Nike, Adidas, Lacoste, Armani e Hugo Boss, com retirada na loja e entrega para todo o Brasil.</p>
+        <p class="muted-text">Loja multimarcas no Pan-Americano, Jaraguá - SP. Peças selecionadas, com retirada grátis na loja e entrega para todo o Brasil.</p>
       </div>
       <div>
         <h4>Loja</h4>
@@ -100,7 +100,7 @@ function render(file) {
   const version = assetVersion.cached || (assetVersion.cached = assetVersion());
   const admin = rel.startsWith("admin/");
   const title = meta.title ? meta.title + " | " + STORE : STORE + " | Moda premium multimarcas em São Paulo";
-  const description = meta.description || "Moda premium multimarcas: Nike, Adidas, Lacoste, Armani e Hugo Boss. Compre online com PIX ou cartão, retire na loja no Pan-Americano (Jaraguá-SP) ou receba em casa.";
+  const description = meta.description || "Loja multimarcas no Pan-Americano (Jaraguá-SP). Compre online com PIX ou cartão, retire grátis na loja ou receba em casa.";
   const url = SITE_URL + "/" + (rel === "index.html" ? "" : rel);
   const noindex = meta.noindex || admin;
   const scripts = ["storage.js", "app.js"].concat(meta.scripts || []);
